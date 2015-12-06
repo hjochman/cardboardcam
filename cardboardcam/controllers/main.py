@@ -1,6 +1,6 @@
 from os import path
 from urllib.parse import urljoin
-from flask import Blueprint, render_template, flash, request, redirect, url_for, abort
+from flask import Blueprint, render_template, flash, request, redirect, url_for, abort, jsonify, session
 from flask import current_app
 from flask.ext.login import login_user, logout_user, login_required
 
@@ -25,7 +25,7 @@ main = Blueprint('main', __name__)
 def upload_dir():
     return current_app.config.get('UPLOAD_FOLDER', '/tmp')
 
-@main.route('/', methods=['GET', 'POST'])
+@main.route('/', methods=['GET'])
 @cache.cached(timeout=1000)
 def home():
     form = ImageForm()
@@ -34,21 +34,22 @@ def home():
 
 @main.route('/upload', methods=['POST'])
 def upload():
-    form = ImageForm()
+    # TODO: compare CSRF token from request and session
+    # http://flask.pocoo.org/snippets/3/
+    # current_app.logger.debug(session['csrf_token'] + ',' + request.headers.get('X-CSRFToken', 'None'))
 
-    if form.validate_on_submit():
-        filename = secure_filename(form.image.data.filename)
-        img_path = path.join(upload_dir(), filename)
-        form.image.data.save(img_path)
-        try:
-            split_vr_image(img_path)
-        except:
-            abort(500);
+    file = request.files['file']
+    filename = secure_filename(file.filename)
+    img_path = path.join(upload_dir(), filename)
+    file.save(img_path)
 
-        return redirect(url_for('main.result', img_filename=filename))
-    else:
-        filename = None
-        return render_template('index.html', form=form, filename=filename)
+    try:
+        split_vr_image(img_path)
+    except:
+        abort(500)
+
+    return jsonify({'redirect': url_for('main.result', img_filename=filename)})
+    # return redirect(url_for('main.result', img_filename=filename))
 
 @main.route('/<img_filename>', methods=['GET'])
 def result(img_filename=None):
