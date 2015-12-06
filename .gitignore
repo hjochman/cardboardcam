@@ -4,3 +4,7 @@ database.db
 */static/uploads
 */static/.webassets-cache/
 */__pycache__/
+
+*/settings.py
+*/static/public/js/common.js
+*/static/public/css/common.css
