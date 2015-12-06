@@ -21,4 +21,5 @@ mccabe==0.3
 flake8==2.4.0
 
 # Specific
-python-xmp-toolkit
+# python-xmp-toolkit
+-e git+https://github.com/pansapiens/python-xmp-toolkit.git@feature/search-ld-library-path#egg=python-xmp-toolkit
