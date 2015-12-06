@@ -10,6 +10,9 @@ from cardboardcam.extensions import cache
 from cardboardcam.forms import LoginForm, ImageForm
 from cardboardcam.models import User
 
+from base64 import b64decode
+from libxmp.utils import file_to_dict
+
 main = Blueprint('main', __name__)
 
 # upload_folder = 'uploads'
@@ -37,7 +40,10 @@ def upload():
         filename = secure_filename(form.image.data.filename)
         img_path = path.join(upload_dir(), filename)
         form.image.data.save(img_path)
-        split_vr_image(img_path)
+        try:
+            split_vr_image(img_path)
+        except:
+            abort(500);
 
         return redirect(url_for('main.result', img_filename=filename))
     else:
@@ -70,10 +76,6 @@ def get_audio_file_name(img_filename):
     return path.splitext(img_filename)[0] + "_audio.mp4"
 
 def split_vr_image(img_filename):
-
-    from base64 import b64decode
-    from libxmp.utils import file_to_dict
-
     xmp = file_to_dict(img_filename)
 
     audio_b64 = xmp[u'http://ns.google.com/photos/1.0/audio/'][1][1]
@@ -90,7 +92,15 @@ def split_vr_image(img_filename):
 
 @main.errorhandler(404)
 def page_not_found(e):
-    return render_template('404.html'), 404
+    return render_error_page(404), 404
+
+@main.app_errorhandler(500)
+def page_not_found(e):
+    return render_error_page(500), 400
+
+def render_error_page(status_code: int):
+    return render_template('error_page.html', status_code=status_code)
+
 
 @main.route('/login', methods=['GET', 'POST'])
 def login():

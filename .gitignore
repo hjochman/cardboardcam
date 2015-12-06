@@ -2,3 +2,5 @@
 .idea
 database.db
 */static/uploads
+*/static/.webassets-cache/
+*/__pycache__/
