@@ -5,8 +5,13 @@ __author__ = 'Andrew Perry'
 __email__ = 'ajperry@pansapiens.com'
 __version__ = '1'
 
+import logging
+from logging import StreamHandler
+from logging.handlers import RotatingFileHandler
+
 from flask import Flask
 from webassets.loaders import PythonLoader as PythonAssetsLoader
+from flask_wtf.csrf import CsrfProtect
 
 from cardboardcam.controllers.main import main
 from cardboardcam import assets
@@ -19,6 +24,7 @@ from cardboardcam.extensions import (
     login_manager
 )
 
+csrf = CsrfProtect()
 
 def create_app(object_name, env="prod"):
     """
@@ -37,6 +43,11 @@ def create_app(object_name, env="prod"):
     app.config.from_object(object_name)
     app.config['ENV'] = env
 
+    # handler = RotatingFileHandler('cardboardcam.log', maxBytes=10000, backupCount=1)
+    handler = StreamHandler()
+    handler.setLevel(logging.DEBUG)
+    app.logger.addHandler(handler)
+
     # initialize the cache
     cache.init_app(app)
 
@@ -53,6 +64,8 @@ def create_app(object_name, env="prod"):
     assets_loader = PythonAssetsLoader(assets)
     for name, bundle in assets_loader.load_bundles().items():
         assets_env.register(name, bundle)
+
+    csrf.init_app(app)
 
     # register our blueprints
     app.register_blueprint(main)
