@@ -97,7 +97,7 @@ Dropzone.options.uploadDropzone = {
         self.processQueue();
         console.log('response', response);
         // window.location = response.redirect;
-        renderResultPanel(response.result_fragment);
+        showResultPanel(response.result_fragment);
 
         if (history.pushState) {
           history.pushState(null, null, '#'+response.img_id);
