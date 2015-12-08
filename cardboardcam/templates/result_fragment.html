@@ -1,0 +1,26 @@
+<h1>Chop chop !</h1>
+<div class="row">
+    <div class="col-md-10">
+        <h2>Left</h2>
+        <img src="{{ input_filename }}" width="100%"/>
+    </div>
+</div>
+<hr>
+<div class="row">
+    <div class="col-md-10">
+        <h2>Right</h2>
+        <img src="{{ second_image }}" width="100%"/>
+    </div>
+</div>
+<hr>
+<div class="row">
+    <div class="col-md-10">
+        <h2>Audio</h2>
+        <audio controls>
+            <source src="{{ audio_filename }}" type="audio/mp4">
+            Your browser does not support the audio element.
+        </audio>
+        <br/>
+        <a href="{{ audio_filename }}" download>Download audio</a>
+    </div>
+</div>

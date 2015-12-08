@@ -1,3 +1,59 @@
+"use strict";
+
+$(function () { // open wrapper function
+
+$(window).on('hashchange', function(){
+    // Called every time the window.location #hash changes.
+
+    var hash = window.location.hash;
+    if (hash != "") {
+        render(hash);
+    } else {
+        showInputPanel();
+    }
+});
+
+// we trigger hashchange explicitly on initial page load
+// to set panels to the correct state
+$(window).trigger('hashchange');
+
+function render(hash) {
+    // Trim initial hash symbol #
+    var img_id = hash.substring(1, hash.length);
+    $.ajax({
+      method: "GET",
+      dataType: "html",
+      url: location_no_hash() + img_id,
+      success: function (data, textStatus, jqXHR) {
+          showResultPanel(data);
+      }
+    });
+}
+
+// gets the full window.location without the #hash part
+function location_no_hash() {
+    var url = location.protocol+'//'+location.host+location.pathname+(location.search?location.search:"")
+    return url;
+}
+
+function showInputPanel() {
+    var delay = 0;
+    if ($('#result_panel').is(':visible')) {
+        $('#result_panel').fadeOut(800);
+        delay = 800;
+    }
+    $('#input_panel').delay(delay).fadeIn(800);
+}
+
+function showResultPanel(result_fragment) {
+    var delay = 0;
+    if ($('#input_panel').is(':visible')) {
+        $('#input_panel').fadeOut(800);
+        delay = 800;
+    }
+    $('#result_panel').html(result_fragment);
+    $('#result_panel').delay(delay).fadeIn(800);
+}
 
 Dropzone.options.uploadDropzone = {
     maxFilesize: 16,
@@ -40,7 +96,16 @@ Dropzone.options.uploadDropzone = {
         console.log('successfully uploaded ', file);
         self.processQueue();
         console.log('response', response);
-        window.location = response.redirect;
+        // window.location = response.redirect;
+        renderResultPanel(response.result_fragment);
+
+        if (history.pushState) {
+          history.pushState(null, null, '#'+response.img_id);
+        }
+        else {
+           window.location.hash = '#'+response.img_id;
+        }
+
       });
 
       self.on("complete", function (file) {
@@ -57,3 +122,5 @@ Dropzone.options.uploadDropzone = {
       });
     }
 }
+
+}); // close wrapper function

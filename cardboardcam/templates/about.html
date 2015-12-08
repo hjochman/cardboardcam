@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}About{% endblock %}
+
+{% block body %}
+
+<div class="row">
+
+    {% include 'about_fragment.html' %}
+
+    <div class="col-md-4">
+        <div style="text-align:center;">
+            <img src="{{ url_for('static', filename='images/man_with_ax.png') }}"/>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

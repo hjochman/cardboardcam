@@ -23,3 +23,6 @@ flake8==2.4.0
 # Specific
 # python-xmp-toolkit
 -e git+https://github.com/pansapiens/python-xmp-toolkit.git@feature/search-ld-library-path#egg=python-xmp-toolkit
+xxhash
+basehash
+hexahexacontadecimal

@@ -1,3 +1,4 @@
+import os
 from os import path
 from urllib.parse import urljoin
 from flask import Blueprint, render_template, flash, request, redirect, url_for, abort, jsonify, session
@@ -9,6 +10,10 @@ from werkzeug import secure_filename
 from cardboardcam.extensions import cache
 from cardboardcam.forms import LoginForm, ImageForm
 from cardboardcam.models import User
+
+from basehash import base62
+from hexahexacontadecimal import hexahexacontadecimal_encode_int as hh_encode_int
+import xxhash
 
 from base64 import b64decode
 from libxmp.utils import file_to_dict
@@ -32,6 +37,11 @@ def home():
     filename = None
     return render_template('index.html', form=form, filename=filename)
 
+@main.route('/about', methods=['GET'])
+@cache.cached(timeout=1000)
+def about():
+    return render_template('about.html')
+
 @main.route('/upload', methods=['POST'])
 def upload():
     # TODO: compare CSRF token from request and session
@@ -39,20 +49,33 @@ def upload():
     # current_app.logger.debug(session['csrf_token'] + ',' + request.headers.get('X-CSRFToken', 'None'))
 
     file = request.files['file']
-    filename = secure_filename(file.filename)
+    tmp_filename = secure_filename(file.filename)
+    tmp_img_path = path.join(upload_dir(), tmp_filename)
+    file.save(tmp_img_path)
+    hash_id = get_hash_id(tmp_img_path)
+    filename = hash_id + '.jpg'
     img_path = path.join(upload_dir(), filename)
-    file.save(img_path)
+    os.rename(tmp_img_path, img_path)
 
     try:
         split_vr_image(img_path)
     except:
         abort(500)
 
-    return jsonify({'redirect': url_for('main.result', img_filename=filename)})
+    #return jsonify({'redirect': url_for('main.result', img_filename=filename)})
+    return jsonify({'result_fragment': result(img_id=hash_id), 'img_id': hash_id})
     # return redirect(url_for('main.result', img_filename=filename))
 
-@main.route('/<img_filename>', methods=['GET'])
-def result(img_filename=None):
+def get_hash_id(filepath):
+    with open(filepath, 'rb') as file:
+        hash_str = base62().encode(xxhash.xxh64(file.read()).intdigest())
+        # hash_str = hh_encode_int(xxhash.xxh64(file.read()).intdigest())
+
+    return hash_str
+
+@main.route('/<img_id>', methods=['GET'])
+def result(img_id=None):
+    img_filename = img_id + '.jpg'
     upload_folder = upload_dir()
     input_file = path.join(upload_folder, img_filename)
     second_image = path.join(upload_folder, get_second_image_name(img_filename))
@@ -65,7 +88,9 @@ def result(img_filename=None):
     input_file_url = url_for('static', filename='uploads/' + img_filename)
     second_image_url = url_for('static', filename='uploads/' + get_second_image_name(img_filename))
     audio_file_url = url_for('static', filename='uploads/' + get_audio_file_name(img_filename))
-    return render_template('result.html',
+    #template = 'result.html'
+    template = 'result_fragment.html'
+    return render_template(template,
                            input_filename=input_file_url,
                            second_image=second_image_url,
                            audio_filename=audio_file_url)
