@@ -6,8 +6,8 @@ $(window).on('hashchange', function(){
     // Called every time the window.location #hash changes.
 
     var hash = window.location.hash;
-    if (hash != "") {
-        render(hash);
+    if (hash && hash != "") {
+        renderResult(hash);
     } else {
         showInputPanel();
     }
@@ -17,7 +17,7 @@ $(window).on('hashchange', function(){
 // to set panels to the correct state
 $(window).trigger('hashchange');
 
-function render(hash) {
+function renderResult(hash) {
     // Trim initial hash symbol #
     var img_id = hash.substring(1, hash.length);
     $.ajax({
@@ -34,6 +34,15 @@ function render(hash) {
 function location_no_hash() {
     var url = location.protocol+'//'+location.host+location.pathname+(location.search?location.search:"")
     return url;
+}
+
+function navToHash(hash) {
+    if (history.pushState) {
+      history.pushState(null, null, '#'+hash);
+    }
+    else {
+       window.location.hash = '#'+hash;
+    }
 }
 
 function showInputPanel() {
@@ -99,12 +108,7 @@ Dropzone.options.uploadDropzone = {
         // window.location = response.redirect;
         showResultPanel(response.result_fragment);
 
-        if (history.pushState) {
-          history.pushState(null, null, '#'+response.img_id);
-        }
-        else {
-           window.location.hash = '#'+response.img_id;
-        }
+        navToHash(response.img_id);
 
       });
 
