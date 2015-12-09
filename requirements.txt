@@ -29,3 +29,4 @@ basehash
 hexahexacontadecimal
 Pillow
 -e git+https://github.com/SilentSokolov/flask-thumbnails.git#egg=flask-thumbnails
+python-magic

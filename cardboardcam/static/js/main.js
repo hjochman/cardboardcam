@@ -65,7 +65,7 @@ function showResultPanel(result_fragment) {
 }
 
 Dropzone.options.uploadDropzone = {
-    maxFilesize: 16,
+    maxFilesize: 20,
 
     // these options limit the dropzone to a single file
     maxFiles: 1,

@@ -11,6 +11,8 @@ from cardboardcam.extensions import cache
 from cardboardcam.forms import LoginForm, ImageForm
 from cardboardcam.models import User
 
+import magic
+
 from basehash import base62
 from hexahexacontadecimal import hexahexacontadecimal_encode_int as hh_encode_int
 import xxhash
@@ -52,6 +54,16 @@ def upload():
     tmp_filename = secure_filename(file.filename)
     tmp_img_path = path.join(upload_dir(), tmp_filename)
     file.save(tmp_img_path)
+
+    # don't accept huge files
+    filesize = os.stat(tmp_img_path).st_size
+    if filesize > current_app.config.get('MAX_CONTENT_LENGTH', 20*1024*1024):
+        abort(400)  # (Bad Request), malformed data from client
+
+    # only accept JPEGs that have EXIF data
+    if magic.from_file(tmp_img_path) != b'JPEG image data, EXIF standard':
+        abort(400)  # (Bad Request), malformed data from client
+
     hash_id = get_hash_id(tmp_img_path)
     filename = hash_id + '.jpg'
     img_path = path.join(upload_dir(), filename)

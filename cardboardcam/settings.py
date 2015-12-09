@@ -9,6 +9,7 @@ class Config(object):
     MEDIA_THUMBNAIL_FOLDER = MEDIA_FOLDER + '/thumbnails'
     MEDIA_URL = '/static/'
     MEDIA_THUMBNAIL_URL = '/static/uploads/thumbnails/'
+    MAX_CONTENT_LENGTH = 20 * 1024 * 1024  # 20 Mb
 
 class ProdConfig(Config):
     SQLALCHEMY_DATABASE_URI = 'sqlite:///../database.db'
