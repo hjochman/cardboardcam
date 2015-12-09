@@ -28,4 +28,4 @@ flake8==2.4.0
 basehash
 hexahexacontadecimal
 Pillow
--e git+https://github.com/SilentSokolov/flask-thumbnails.git
+-e git+https://github.com/SilentSokolov/flask-thumbnails.git#egg=flask-thumbnails
