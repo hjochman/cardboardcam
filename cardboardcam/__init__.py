@@ -12,6 +12,7 @@ from logging.handlers import RotatingFileHandler
 from flask import Flask
 from webassets.loaders import PythonLoader as PythonAssetsLoader
 from flask_wtf.csrf import CsrfProtect
+from flask.ext.thumbnails import Thumbnail
 
 from cardboardcam.controllers.main import main
 from cardboardcam import assets
@@ -66,6 +67,8 @@ def create_app(object_name, env="prod"):
         assets_env.register(name, bundle)
 
     csrf.init_app(app)
+
+    thumb = Thumbnail(app)
 
     # register our blueprints
     app.register_blueprint(main)

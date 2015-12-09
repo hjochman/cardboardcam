@@ -85,15 +85,24 @@ def result(img_id=None):
     else:
         abort(404)
 
-    input_file_url = url_for('static', filename='uploads/' + img_filename)
-    second_image_url = url_for('static', filename='uploads/' + get_second_image_name(img_filename))
+    from PIL import Image
+    image = Image.open(input_file)
+    aspect = float(image.size[1]) / float(image.size[0])  # height / width
+    thumb_height = str(int(600 * aspect))
+
     audio_file_url = url_for('static', filename='uploads/' + get_audio_file_name(img_filename))
-    #template = 'result.html'
+    # input_file_url = url_for('static', filename='uploads/' + img_filename)
+    # second_image_url = url_for('static', filename='uploads/' + get_second_image_name(img_filename))
+    # template = 'result.html'
     template = 'result_fragment.html'
     return render_template(template,
-                           input_filename=input_file_url,
-                           second_image=second_image_url,
-                           audio_filename=audio_file_url)
+                           # input_img=input_file_url,
+                           # second_img=second_image_url,
+                           # audio_file_url=audio_file_url,
+                           audio_file=audio_file_url,
+                           left_img=img_filename,
+                           right_img=get_second_image_name(img_filename),
+                           thumb_height=thumb_height)
 
 def get_second_image_name(img_filename):
     return path.splitext(img_filename)[0] + "_righteye.jpg"

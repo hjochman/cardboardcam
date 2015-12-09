@@ -27,3 +27,5 @@ flake8==2.4.0
 -e git+https://github.com/pansapiens/python-xxhash.git@master#egg=xxhash
 basehash
 hexahexacontadecimal
+Pillow
+-e git+https://github.com/SilentSokolov/flask-thumbnails.git

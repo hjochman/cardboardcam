@@ -8,6 +8,10 @@ class Config(object):
     # You should change this to your own string
     SECRET_KEY = uuid4().get_hex()
     UPLOAD_FOLDER = 'cardboardcam/static/uploads'
+    MEDIA_FOLDER = UPLOAD_FOLDER
+    MEDIA_THUMBNAIL_FOLDER = MEDIA_FOLDER + '/thumbnails'
+    MEDIA_URL = '/static/'
+    MEDIA_THUMBNAIL_URL = '/static/uploads/thumbnails/'
 
 class ProdConfig(Config):
     SQLALCHEMY_DATABASE_URI = 'sqlite:///../database.db'
