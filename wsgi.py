@@ -12,10 +12,10 @@ from cardboardcam import create_app, settings
 
 config = settings.ProdConfig
 # config = settings.DevConfig
-application = create_app(config)
+app = create_app(config)
 
 if __name__ == "__main__":
-    application.run()
+    app.run()
 
 #def application(environ, start_response):
 #    output = 'Welcome to your mod_wsgi website! It uses:\n\nPython %s' % sys.version
