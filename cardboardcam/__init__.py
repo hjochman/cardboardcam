@@ -11,8 +11,6 @@ from logging.handlers import RotatingFileHandler
 
 from flask import Flask
 from webassets.loaders import PythonLoader as PythonAssetsLoader
-from flask_wtf.csrf import CsrfProtect
-from flask.ext.thumbnails import Thumbnail
 
 from cardboardcam.controllers.main import main
 from cardboardcam import assets
@@ -22,10 +20,11 @@ from cardboardcam.extensions import (
     cache,
     assets_env,
     debug_toolbar,
-    login_manager
+    login_manager,
+    csrf,
+    thumbnail,
 )
 
-csrf = CsrfProtect()
 
 def create_app(object_name, env="prod"):
     """
@@ -44,8 +43,10 @@ def create_app(object_name, env="prod"):
     app.config.from_object(object_name)
     app.config['ENV'] = env
 
-    # handler = RotatingFileHandler('cardboardcam.log', maxBytes=10000, backupCount=1)
-    handler = StreamHandler()
+    handler = RotatingFileHandler('cardboardcam.log',
+                                  maxBytes=10000,
+                                  backupCount=1)
+    # handler = StreamHandler()
     handler.setLevel(logging.DEBUG)
     app.logger.addHandler(handler)
 
@@ -68,7 +69,7 @@ def create_app(object_name, env="prod"):
 
     csrf.init_app(app)
 
-    thumb = Thumbnail(app)
+    thumbnail.init_app(app)
 
     # register our blueprints
     app.register_blueprint(main)
