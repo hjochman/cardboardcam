@@ -76,6 +76,10 @@ def create_app(object_name, env="prod"):
 
     thumbnail.init_app(app)
 
+    # check that our upload folder exists
+    if not os.path.exists(app.config['UPLOAD_FOLDER']):
+        os.mkdir(app.config['UPLOAD_FOLDER'])
+
     # register our blueprints
     app.register_blueprint(main)
 
