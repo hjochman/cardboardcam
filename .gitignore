@@ -1,7 +1,8 @@
 *.pyc
 .idea
 database.db
-*/static/uploads
+*/static/uploads/
+!*/static/uploads/README
 */static/.webassets-cache/
 */__pycache__/
 
