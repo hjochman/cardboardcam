@@ -118,7 +118,19 @@ Dropzone.options.uploadDropzone = {
           console.log('error status: ', xhr.status);
           showResultPanel(errorMessage);
           // navToHash(xhr.status)
+        } else {
+          if (file.status == 'error') {
+            console.log('complete status: ', file.status);
+            var error_panel = $('.error_panel');
+            error_panel.find('#error_message').html(errorMessage);
+            error_panel.fadeIn(800);
+          }
         }
+      });
+
+      self.on("removedfile", function (file) {
+        var error_panel = $('.error_panel');
+        error_panel.fadeOut(800);
       });
 
       self.on("complete", function (file) {
