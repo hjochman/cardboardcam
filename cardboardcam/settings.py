@@ -13,10 +13,16 @@ class Config(object):
     MEDIA_THUMBNAIL_URL = '/static/uploads/thumbnails/'
     MAX_CONTENT_LENGTH = 20 * 1024 * 1024  # 20 Mb
 
+
 class ProdConfig(Config):
     SQLALCHEMY_DATABASE_URI = 'sqlite:///../database.db'
 
     CACHE_TYPE = 'simple'
+    APP_BASE = '/srv/webapps/cardboardcam/src/'
+    UPLOAD_FOLDER = APP_BASE + 'cardboardcam/static/uploads'
+
+    MEDIA_FOLDER = UPLOAD_FOLDER
+    MEDIA_THUMBNAIL_FOLDER = MEDIA_FOLDER + '/thumbnails'
 
 
 class DevConfig(Config):
