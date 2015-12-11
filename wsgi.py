@@ -13,8 +13,17 @@ import os
 from cardboardcam import create_app, settings
 
 # env = 'dev'
-env = os.environ.get('DEPLOYMENT', 'prod')
-app = create_app(getattr(settings, '%sConfig' % env.capitalize()),
+
+# we can choose DevConfig vs ProdConfig settings classes using the
+# environment variable ENV
+env = os.environ.get('ENV', 'prod')
+config = getattr(settings, '%sConfig' % env.capitalize())
+
+# alternatively, we can source all our config variables directly from the
+# shell environment (12-factor style)
+# config = os.environ
+
+app = create_app(config,
                  env=env)
 
 if __name__ == "__main__":

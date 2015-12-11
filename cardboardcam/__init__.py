@@ -5,6 +5,7 @@ __author__ = 'Andrew Perry'
 __email__ = 'ajperry@pansapiens.com'
 __version__ = '1'
 
+import os
 import logging
 from logging import StreamHandler
 from logging.handlers import RotatingFileHandler
@@ -43,7 +44,11 @@ def create_app(object_name, env="prod"):
     app.config.from_object(object_name)
     app.config['ENV'] = env
 
-    handler = RotatingFileHandler('cardboardcam.log',
+    log_dir = app.config.get('LOG_DIR', '')
+    if not os.path.exists(log_dir):
+        os.mkdir(log_dir)
+    log_path = os.path.join(log_dir, 'cardboardcam.log')
+    handler = RotatingFileHandler(log_path,
                                   maxBytes=10000,
                                   backupCount=1)
     # handler = StreamHandler()

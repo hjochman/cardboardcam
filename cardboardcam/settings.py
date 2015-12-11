@@ -3,8 +3,10 @@ db_file = tempfile.NamedTemporaryFile()
 
 
 class Config(object):
-    SECRET_KEY = 'o93ryvba8rnyaljrdqp0plaoseryfusihgfjkshfla238uierndq2h3krha2klmfeps3m4hkgnkjwdh'
+    SECRET_KEY = ('o93ryvba8rnyaljrdqp0plaoseryfusihgfjkshfla238uierndq2h3kr'
+                  'ha2klmfeps3m4hkgnkjwdh')
     UPLOAD_FOLDER = 'cardboardcam/static/uploads'
+    LOG_DIR = 'log/'
     MEDIA_FOLDER = UPLOAD_FOLDER
     MEDIA_THUMBNAIL_FOLDER = MEDIA_FOLDER + '/thumbnails'
     MEDIA_URL = '/static/'
