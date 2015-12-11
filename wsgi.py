@@ -1,4 +1,6 @@
+#!/usr/bin/env python3
 import sys
+import os
 
 # Active your Virtual Environment, which I'm assuming you've already setup
 # activate_this='/home/perry/.virtualenvs/cardboardcam/bin/activate_this.py'
@@ -10,22 +12,10 @@ import sys
 # Launching our app
 from cardboardcam import create_app, settings
 
-config = settings.ProdConfig
-# config = settings.DevConfig
-app = create_app(config)
+# env = 'dev'
+env = os.environ.get('DEPLOYMENT', 'prod')
+app = create_app(getattr(settings, '%sConfig' % env.capitalize()),
+                 env=env)
 
 if __name__ == "__main__":
     app.run()
-
-#def application(environ, start_response):
-#    output = 'Welcome to your mod_wsgi website! It uses:\n\nPython %s' % sys.version
-#    output += '\nWSGI version: %s' % str(environ['mod_wsgi.version'])
-#
-#    response_headers = [
-#        ('Content-Length', str(len(output))),
-#        ('Content-Type', 'text/plain'),
-#    ]
-#
-#    start_response('200 OK', response_headers)
-#
-#    return [bytes(output, 'utf-8')]
