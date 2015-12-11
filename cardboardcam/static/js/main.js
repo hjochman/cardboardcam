@@ -1,6 +1,6 @@
 "use strict";
 
-$(function () { // open wrapper function
+$(function () { // shorthand for $( document ).ready()
 
 $(window).on('hashchange', function(){
     // Called every time the window.location #hash changes.
@@ -76,7 +76,7 @@ Dropzone.options.uploadDropzone = {
     addRemoveLinks: true,
     dictDefaultMessage: 'Drop your photo here',
     dictResponseError: 'Server not Configured',
-    acceptedFiles: ".jpg,.jpeg",
+    acceptedFiles: ".jpg,.jpeg,image/jpeg",
     init:function(){
       var self = this;
       // config

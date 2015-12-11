@@ -24,6 +24,8 @@ from cardboardcam.extensions import (
     login_manager,
     csrf,
     thumbnail,
+    rq,
+    # aio,
 )
 
 
@@ -75,6 +77,10 @@ def create_app(object_name, env="prod"):
     csrf.init_app(app)
 
     thumbnail.init_app(app)
+
+    rq.init_app(app)
+
+    # aio.init_app(app)
 
     # check that our upload folder exists
     if not os.path.exists(app.config['UPLOAD_FOLDER']):

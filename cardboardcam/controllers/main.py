@@ -1,9 +1,17 @@
 import os
 from os import path
+import shutil
 from urllib.parse import urljoin
 from flask import Blueprint, render_template, flash, request, redirect, url_for, abort, jsonify, session
 from flask import current_app
 from flask.ext.login import login_user, logout_user, login_required
+from flask.ext import rq
+
+# from flask.ext.aiohttp import async
+# from flask.ext.aiohttp import request as aiohttp_request
+# from flask_aiohttp.helper import async, websocket
+
+import requests
 
 from werkzeug import secure_filename
 
@@ -13,12 +21,13 @@ from cardboardcam.models import User
 
 import magic
 
+import uuid
 from basehash import base62
 from hexahexacontadecimal import hexahexacontadecimal_encode_int as hh_encode_int
 import xxhash
 
 import gc
-from base64 import b64decode
+from base64 import b64decode, b64encode
 from libxmp.utils import file_to_dict
 from libxmp import XMPFiles
 
@@ -73,7 +82,7 @@ def upload():
     hash_id = get_hash_id(tmp_img_path)
     filename = hash_id + '.jpg'
     img_path = path.join(upload_dir(), filename)
-    os.rename(tmp_img_path, img_path)
+    shutil.move(tmp_img_path, img_path)
 
     try:
         split_vr_image(img_path)
@@ -127,7 +136,63 @@ def result(img_id=None):
                            thumb_height=thumb_height)
 
 
-def get_image_name(img_filename, eye : str) -> str:
+@main.route('/download_image')
+# @async
+def download_image():
+    url = request.args.get('url', None)
+    # response = yield from aiohttp.request('GET', url)
+    # data = yield from response.read()
+
+    job_id = uuid.uuid4().hex
+    download_image_task.delay(url, job_id)
+
+    # if url:
+    #     response = requests.get(url, stream=True)
+    #     data = response.content
+    # else:
+    #     data = ''
+    #
+    # with open('/tmp/img.jpg', 'wb') as fh:
+    #     fh.write(data)
+
+    # return jsonify({'data': str(b64encode(data))})
+    return jsonify({'job_id': job_id})
+
+
+@rq.job
+def download_image_task(url, job_uuid):
+    if url:
+        response = requests.get(url, stream=True)
+        data = response.content
+    else:
+        data = ''
+
+    fn = '/tmp/%s' % job_uuid
+    with open(fn, 'wb') as fh:
+        fh.write(data)
+    shutil.move(fn, fn+'.done')
+
+
+# TODO: client can poll this
+@main.route('/check_download_image_job/<job_uuid>')
+def check_download_image_job(job_uuid):
+    dl_filepath = '/tmp/%s.done' % job_uuid
+    if os.path.exists(dl_filepath):
+        img_id = get_hash_id(dl_filepath)
+        img_path = path.join(upload_dir(), '%s.jpg' % img_id)
+        shutil.move(dl_filepath, img_path)
+        try:
+            split_vr_image(img_path)
+        except:
+            abort(500)
+
+        return jsonify({'status': 'done',
+                        'img_id': img_id})
+
+    return jsonify({'status': 'running'})
+
+
+def get_image_name(img_filename, eye: str) -> str:
     return path.splitext(img_filename)[0] + "_%s.jpg" % eye
 
 
@@ -178,7 +243,7 @@ def split_vr_image(img_filename):
 
     # rename original image
     left_img_filename = get_image_name(img_filename, 'left')
-    os.rename(img_filename, left_img_filename)
+    shutil.move(img_filename, left_img_filename)
 
     return (left_img_filename, right_img_filename, audio_filename)
 
