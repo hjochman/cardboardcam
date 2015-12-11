@@ -112,6 +112,15 @@ Dropzone.options.uploadDropzone = {
 
       });
 
+      self.on("error", function (file, errorMessage, xhr) {
+        if (xhr && xhr.status != 200) {
+          console.log('error message: ', xhr.statusText);
+          console.log('error status: ', xhr.status);
+          showResultPanel(errorMessage);
+          // navToHash(xhr.status)
+        }
+      });
+
       self.on("complete", function (file) {
         console.log('complete ', file);
       });

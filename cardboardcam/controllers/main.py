@@ -184,17 +184,17 @@ def split_vr_image(img_filename):
 
 
 @main.errorhandler(404)
-def page_not_found(e):
+def status_page_not_found(e):
     return render_error_page(404), 404
 
 
 @main.app_errorhandler(500)
-def page_not_found(e):
-    return render_error_page(500), 400
+def status_internal_server_error(e):
+    return render_error_page(500), 500
 
 
 def render_error_page(status_code: int):
-    return render_template('error_page.html', status_code=status_code)
+    return render_template('error_page_fragment.html', status_code=status_code)
 
 
 @main.route('/login', methods=['GET', 'POST'])
