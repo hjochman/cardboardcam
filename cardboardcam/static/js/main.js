@@ -65,6 +65,9 @@ function showResultPanel(result_fragment) {
 }
 
 Dropzone.options.uploadDropzone = {
+    // thumbnailWidth: 600,
+    // thumbnailHeight: 114,  // null,
+
     maxFilesize: 20,
 
     // these options limit the dropzone to a single file
