@@ -1,5 +1,6 @@
 import os
 from os import path
+import shutil
 from urllib.parse import urljoin
 from flask import Blueprint, render_template, flash, request, redirect, url_for, abort, jsonify, session
 from flask import current_app
@@ -64,16 +65,16 @@ def upload():
     # don't accept huge files
     filesize = os.stat(tmp_img_path).st_size
     if filesize > current_app.config.get('MAX_CONTENT_LENGTH', 20*1024*1024):
-        abort(400)  # (Bad Request), malformed data from client
+        return error_page(400, message="Image too large.")  # (400 Bad Request), malformed data from client
 
     # only accept JPEGs that have EXIF data
     if magic.from_file(tmp_img_path) != b'JPEG image data, EXIF standard':
-        abort(400)  # (Bad Request), malformed data from client
+        return error_page(400, message="No JPEG EXIF data found. Is this really a Cardboard Camera VR image ?")
 
     hash_id = get_hash_id(tmp_img_path)
     filename = hash_id + '.jpg'
     img_path = path.join(upload_dir(), filename)
-    os.rename(tmp_img_path, img_path)
+    shutil.move(tmp_img_path, img_path)
 
     try:
         split_vr_image(img_path)
@@ -102,17 +103,21 @@ def result(img_id=None):
     left_img_filepath = path.join(upload_folder, left_img)
     right_img_filepath = path.join(upload_folder, right_img)
     audio_file = path.join(upload_folder, get_audio_file_name(img_filename))
-    if path.isfile(left_img_filepath) and path.isfile(right_img_filepath) and path.isfile(audio_file):
+    if path.isfile(left_img_filepath) and path.isfile(right_img_filepath):
         pass
     else:
         abort(404)
 
+    # calculate the thumbnail aspect ratio and height
     from PIL import Image
     image = Image.open(left_img_filepath)
     aspect = float(image.size[1]) / float(image.size[0])  # height / width
     thumb_height = str(int(600 * aspect))
 
-    audio_file_url = url_for('static', filename='uploads/' + get_audio_file_name(img_filename))
+    audio_file_url = None
+    if path.isfile(audio_file):
+        audio_file_url = url_for('static', filename='uploads/' + get_audio_file_name(img_filename))
+
     # input_file_url = url_for('static', filename='uploads/' + img_filename)
     # second_image_url = url_for('static', filename='uploads/' + get_second_image_name(img_filename))
     # template = 'result.html'
@@ -139,62 +144,72 @@ def split_vr_image(img_filename):
     XMP_NS_GPHOTOS_IMAGE = u'http://ns.google.com/photos/1.0/image/'
     XMP_NS_GPHOTOS_AUDIO = u'http://ns.google.com/photos/1.0/audio/'
 
+    # TODO: catch XMPError ("bad schema") here
     xmpfile = XMPFiles(file_path=img_filename, open_forupdate=True)
     xmp = xmpfile.get_xmp()
-    right_image_b64 = xmp.get_property(XMP_NS_GPHOTOS_IMAGE, u'GImage:Data')
-    audio_b64 = xmp.get_property(XMP_NS_GPHOTOS_AUDIO, u'GAudio:Data')
-    xmp.delete_property(XMP_NS_GPHOTOS_IMAGE, u'GImage:Mime')
-    xmp.delete_property(XMP_NS_GPHOTOS_AUDIO, u'GAudio:Mime')
-    xmp.delete_property(XMP_NS_GPHOTOS_IMAGE, u'GImage:Data')
-    xmp.delete_property(XMP_NS_GPHOTOS_AUDIO, u'GAudio:Data')
+
+    right_image_b64, right_img_filename = None, None
+    audio_b64, audio_filename = None, None
+
+    if xmp.does_property_exist(XMP_NS_GPHOTOS_IMAGE, u'GImage:Data'):
+        right_image_b64 = xmp.get_property(XMP_NS_GPHOTOS_IMAGE, u'GImage:Data')
+        xmp.delete_property(XMP_NS_GPHOTOS_IMAGE, u'GImage:Mime')
+        xmp.delete_property(XMP_NS_GPHOTOS_IMAGE, u'GImage:Data')
+
+    if xmp.does_property_exist(XMP_NS_GPHOTOS_AUDIO, u'GAudio:Data'):
+        audio_b64 = xmp.get_property(XMP_NS_GPHOTOS_AUDIO, u'GAudio:Data')
+        xmp.delete_property(XMP_NS_GPHOTOS_AUDIO, u'GAudio:Mime')
+        xmp.delete_property(XMP_NS_GPHOTOS_AUDIO, u'GAudio:Data')
 
     # save stripped XMP header to original image
     if xmpfile.can_put_xmp(xmp):
         xmpfile.put_xmp(xmp)
     xmpfile.close_file()
 
-    # save the right image
-    right_img_filename = get_image_name(img_filename, 'right')
-    with open(right_img_filename, 'wb') as fh:
-        fh.write(b64decode(right_image_b64))
-    del right_image_b64
-    # gc.collect()
+    if right_image_b64:
+        # save the right image
+        right_img_filename = get_image_name(img_filename, 'right')
+        with open(right_img_filename, 'wb') as fh:
+            fh.write(b64decode(right_image_b64))
+        del right_image_b64
+        # gc.collect()
 
-    # add stripped XMP header to the right image
-    xmpfile = XMPFiles(file_path=right_img_filename, open_forupdate=True)
-    if xmpfile.can_put_xmp(xmp):
-        xmpfile.put_xmp(xmp)
-    xmpfile.close_file()
+        # add stripped XMP header to the right image
+        xmpfile = XMPFiles(file_path=right_img_filename, open_forupdate=True)
+        if xmpfile.can_put_xmp(xmp):
+            xmpfile.put_xmp(xmp)
+        xmpfile.close_file()
 
     del xmp
     # gc.collect()
 
-    # save the audio
-    audio_filename = get_audio_file_name(img_filename)
-    with open(audio_filename, 'wb') as fh:
-        fh.write(b64decode(audio_b64))
-    del audio_b64
-    # gc.collect()
+    if audio_b64:
+        # save the audio
+        audio_filename = get_audio_file_name(img_filename)
+        with open(audio_filename, 'wb') as fh:
+            fh.write(b64decode(audio_b64))
+        del audio_b64
+        # gc.collect()
 
     # rename original image
     left_img_filename = get_image_name(img_filename, 'left')
-    os.rename(img_filename, left_img_filename)
+    shutil.move(img_filename, left_img_filename)
 
-    return (left_img_filename, right_img_filename, audio_filename)
+    return left_img_filename, right_img_filename, audio_filename
 
 
 @main.errorhandler(404)
 def status_page_not_found(e):
-    return render_error_page(404), 404
+    return error_page(404, message="Not found.")
 
 
 @main.app_errorhandler(500)
 def status_internal_server_error(e):
-    return render_error_page(500), 500
+    return error_page(500, message="Something went wrong.")
 
 
-def render_error_page(status_code: int):
-    return render_template('error_page_fragment.html', status_code=status_code)
+def error_page(status_code: int, message=''):
+    return render_template('error_page_fragment.html', status_code=status_code, message=message), status_code
 
 
 @main.route('/login', methods=['GET', 'POST'])

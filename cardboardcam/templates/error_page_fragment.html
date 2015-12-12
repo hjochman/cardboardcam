@@ -3,12 +3,7 @@
 
     <div class="col-md-4"></div>
     <div class="col-md-4" style="text-align: center;">
-        {% if status_code == 404 %}
-           <em>Not found.</em>
-        {% endif %}
-        {% if status_code == 500 %}
-           <em>Something went wrong.</em>
-        {% endif %}
+        <em>{{ message }}</em>
     </div>
     <div class="col-md-4"></div>
 </div>
