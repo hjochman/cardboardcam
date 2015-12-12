@@ -200,20 +200,40 @@ def split_vr_image(img_filename):
 
 @main.errorhandler(404)
 def status_page_not_found(e):
+    """
+    Renders the error page shown when we call abort(404).
+    :type e: int
+    :return:
+    """
     return error_page(404, message="Not found.")
 
 
 @main.app_errorhandler(500)
 def status_internal_server_error(e):
+    """
+    Renders the error page shown when we call abort(500).
+    :type e: int
+    :return:
+    """
     return error_page(500, message="Something went wrong.")
 
 
 def error_page(status_code: int, message=''):
+    """
+    Renders a custom error page with the given HTTP status code in the response.
+    :type status_code: int
+    :type message: str
+    :return:
+    """
     return render_template('error_page_fragment.html', status_code=status_code, message=message), status_code
 
 
 @main.context_processor
-def google_analytics_snippet():
+def inject_google_analytics_code():
+    """
+    This makes the variable 'google_analytics_tracking_id' available for every template to use.
+    :rtype: dict
+    """
     tracking_id = current_app.config.get('GOOGLE_ANALYTICS_TRACKING_ID', None)
     return dict(google_analytics_tracking_id=tracking_id)
 
