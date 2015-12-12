@@ -212,6 +212,12 @@ def error_page(status_code: int, message=''):
     return render_template('error_page_fragment.html', status_code=status_code, message=message), status_code
 
 
+@main.context_processor
+def google_analytics_snippet():
+    tracking_id = current_app.config.get('GOOGLE_ANALYTICS_TRACKING_ID', None)
+    return dict(google_analytics_tracking_id=tracking_id)
+
+
 @main.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()

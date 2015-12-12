@@ -84,5 +84,10 @@
         
         {% block js %}
         {% endblock %}
+
+        {% if google_analytics_tracking_id %}
+        {% include 'google_analytics.html' %}
+        {% endif %}
+
     </body>
 </html>

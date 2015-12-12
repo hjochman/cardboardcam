@@ -5,6 +5,7 @@ db_file = tempfile.NamedTemporaryFile()
 class Config(object):
     SECRET_KEY = ('o93ryvba8rnyaljrdqp0plaoseryfusihgfjkshfla238uierndq2h3kr'
                   'ha2klmfeps3m4hkgnkjwdh')
+    GOOGLE_ANALYTICS_TRACKING_ID = 'UA-882020-14'
     UPLOAD_FOLDER = 'cardboardcam/static/uploads'
     LOG_DIR = 'log/'
     MEDIA_FOLDER = UPLOAD_FOLDER

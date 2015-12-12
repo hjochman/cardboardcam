@@ -7,6 +7,7 @@ db_file = tempfile.NamedTemporaryFile()
 class Config(object):
     # You should change this to your own string
     SECRET_KEY = uuid4().get_hex()
+    GOOGLE_ANALYTICS_TRACKING_ID = ''
     UPLOAD_FOLDER = 'cardboardcam/static/uploads'
     LOG_DIR = 'log/'
     MEDIA_FOLDER = UPLOAD_FOLDER
