@@ -22,7 +22,7 @@ from cardboardcam.extensions import (
     assets_env,
     debug_toolbar,
     login_manager,
-    csrf,
+    # csrf,
     thumbnail,
 )
 
@@ -72,7 +72,7 @@ def create_app(object_name, env="prod"):
     for name, bundle in assets_loader.load_bundles().items():
         assets_env.register(name, bundle)
 
-    csrf.init_app(app)
+    # csrf.init_app(app)
 
     thumbnail.init_app(app)
 
