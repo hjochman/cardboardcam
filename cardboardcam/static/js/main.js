@@ -52,6 +52,7 @@ function showInputPanel() {
         delay = 800;
     }
     $('#input_panel').delay(delay).fadeIn(800);
+    $('#join_input_panel').delay(delay).fadeIn(800);
 }
 
 function showResultPanel(result_fragment) {
