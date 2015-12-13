@@ -1,6 +1,7 @@
 import os
 from os import path
 import shutil
+import tempfile
 from urllib.parse import urljoin
 from flask import Blueprint, render_template, flash, request, redirect, url_for, abort, jsonify, session
 from flask import current_app
@@ -19,9 +20,9 @@ from hexahexacontadecimal import hexahexacontadecimal_encode_int as hh_encode_in
 import xxhash
 
 import gc
-from base64 import b64decode
+import base64
 from libxmp.utils import file_to_dict
-from libxmp import XMPFiles
+from libxmp import XMPFiles, XMPMeta
 
 main = Blueprint('main', __name__)
 
@@ -78,7 +79,8 @@ def upload():
 
     try:
         split_vr_image(img_path)
-    except:
+    except Exception as e:
+        raise e
         abort(500)
 
     # return jsonify({'redirect': url_for('main.result', img_filename=filename)})
@@ -140,6 +142,66 @@ def get_audio_file_name(img_filename):
     return path.splitext(img_filename)[0] + "_audio.mp4"
 
 
+def join_vr_image(left_img_filename, right_img_filename, audio_filename=None):
+    XMP_NS_GPHOTOS_IMAGE = u'http://ns.google.com/photos/1.0/image/'
+    XMP_NS_GPHOTOS_AUDIO = u'http://ns.google.com/photos/1.0/audio/'
+
+    tmp_vr_filename = next(tempfile._get_candidate_names())  # tempfile.NamedTemporaryFile().name
+    shutil.copy(left_img_filename, tmp_vr_filename)
+
+    # TODO: add extra namespaces found in .vr.jpg files
+    # xmlns:GPano="http://ns.google.com/photos/1.0/panorama/"
+    # xmlns:xmp = "http://ns.adobe.com/xap/1.0/"
+    # xmlns:tiff="http://ns.adobe.com/tiff/1.0/"
+
+    # TODO: if left or right jpg has existing EXIF data, take it (minus the XMP part)
+    #       if there is no EXIF data, add some minimal EXIF data
+    #       (eg ImageWidth, ImageLength, Orientation, DateTime)
+
+    # TODO: catch XMPError ("bad schema") here
+    xmpfile = XMPFiles(file_path=tmp_vr_filename, open_forupdate=True)
+    xmp = xmpfile.get_xmp()
+    xmp.register_namespace(XMP_NS_GPHOTOS_IMAGE, 'GImage')
+    xmp.register_namespace(XMP_NS_GPHOTOS_AUDIO, 'GAudio')
+
+    left_img_b64 = None
+    with open(left_img_filename, 'rb') as fh:
+        left_img_data = fh.read()
+    left_img_b64 = base64.b64encode(left_img_data)
+    xmp.set_property(XMP_NS_GPHOTOS_IMAGE, u'GImage:Mime', 'image/jpeg')
+    xmp.set_property(XMP_NS_GPHOTOS_IMAGE, u'GImage:Data', left_img_b64.decode('utf-8'))
+    del left_img_b64
+    # gc.collect()
+
+    right_img_b64 = None
+    with open(right_img_filename, 'rb') as fh:
+        right_img_data = fh.read()
+    right_img_b64 = base64.b64encode(right_img_data)
+    xmp.set_property(XMP_NS_GPHOTOS_IMAGE, u'GImage:Mime', 'image/jpeg')
+    xmp.set_property(XMP_NS_GPHOTOS_IMAGE, u'GImage:Data', right_img_b64.decode('utf-8'))
+    del right_img_b64
+    # gc.collect()
+
+    if audio_filename is not None:
+        audio_b64 = None
+        with open(audio_filename, 'rb') as fh:
+            audio_data = fh.read()
+        audio_b64 = base64.b64encode(audio_data)
+        xmp.set_property(XMP_NS_GPHOTOS_AUDIO, u'GAudio:Mime', 'audio/mp4a-latm')
+        xmp.set_property(XMP_NS_GPHOTOS_AUDIO, u'GAudio:Data', audio_b64.decode('utf-8'))
+        del audio_b64
+        # gc.collect()
+
+    if xmpfile.can_put_xmp(xmp):
+        xmpfile.put_xmp(xmp)
+    xmpfile.close_file()
+
+    vr_filepath = path.join(upload_dir(), get_hash_id(tmp_vr_filename) + '.vr.jpg')
+    shutil.move(tmp_vr_filename, vr_filepath)
+
+    return vr_filepath
+
+
 def split_vr_image(img_filename):
     XMP_NS_GPHOTOS_IMAGE = u'http://ns.google.com/photos/1.0/image/'
     XMP_NS_GPHOTOS_AUDIO = u'http://ns.google.com/photos/1.0/audio/'
@@ -170,7 +232,7 @@ def split_vr_image(img_filename):
         # save the right image
         right_img_filename = get_image_name(img_filename, 'right')
         with open(right_img_filename, 'wb') as fh:
-            fh.write(b64decode(right_image_b64))
+            fh.write(base64.b64decode(right_image_b64))
         del right_image_b64
         # gc.collect()
 
@@ -187,7 +249,7 @@ def split_vr_image(img_filename):
         # save the audio
         audio_filename = get_audio_file_name(img_filename)
         with open(audio_filename, 'wb') as fh:
-            fh.write(b64decode(audio_b64))
+            fh.write(base64.b64decode(audio_b64))
         del audio_b64
         # gc.collect()
 
