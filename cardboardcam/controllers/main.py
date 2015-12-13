@@ -6,7 +6,7 @@ from os import path
 import base64
 
 import magic
-from PIL import Image
+from PIL import Image  # from Pillow package
 import xxhash
 from basehash import base62
 from libxmp import XMPFiles, XMPMeta
@@ -107,7 +107,6 @@ def upload():
     try:
         split_vr_image(img_path)
     except Exception as e:
-        raise e
         abort(500)
 
     # return jsonify({'redirect': url_for('main.result', img_filename=filename)})
@@ -173,6 +172,7 @@ def get_image_dimensions(img_filepath):
     size = image.size
     image.close()
     return size
+
 
 def join_vr_image(left_img_filename, right_img_filename, audio_filename=None, output_filepath=None):
     XMP_NS_GPHOTOS_IMAGE = u'http://ns.google.com/photos/1.0/image/'
