@@ -114,6 +114,12 @@ def upload():
     # return redirect(url_for('main.result', img_filename=filename))
 
 
+@main.route('/join', methods=['POST'])
+def upload_for_join():
+    # TODO: Actually do join here ...
+    return upload()
+
+
 def get_hash_id(filepath):
     with open(filepath, 'rb') as file:
         hash_str = base62().encode(xxhash.xxh64(file.read()).intdigest())

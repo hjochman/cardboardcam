@@ -17,6 +17,15 @@ $(window).on('hashchange', function(){
 // to set panels to the correct state
 $(window).trigger('hashchange');
 
+// tab toggle event
+$('a[data-toggle="tab"]').on('shown.bs.tab', function (event) {
+    console.log($(event.target).attr('aria-controls'));
+    navToHash('');
+    Dropzone.forElement("#split-upload-dropzone").removeAllFiles(true);
+    Dropzone.forElement("#join-upload-dropzone").removeAllFiles(true)
+    showInputPanel();
+});
+
 function renderResult(hash) {
     // Trim initial hash symbol #
     var img_id = hash.substring(1, hash.length);
@@ -45,27 +54,42 @@ function navToHash(hash) {
     }
 }
 
+function activeTabName() {
+    if ($("ul#split_tab_buton li.active")) { console.log('split'); return 'split'; }
+    if ($("ul#join_tab_buton li.active")) { console.log('join'); return 'join'; }
+}
+
 function showInputPanel() {
     var delay = 0;
-    if ($('#result_panel').is(':visible')) {
-        $('#result_panel').fadeOut(800);
-        delay = 800;
+    //var tabname = activeTabName();
+    var result_panel = $('#result_panel');
+    if (result_panel.is(':visible')) {
+        // result_panel.fadeOut(800);
+        result_panel.slideUp(400);
+        delay = 0;
     }
-    $('#input_panel').delay(delay).fadeIn(800);
+    $('#split_input_panel').delay(delay).fadeIn(800);
     $('#join_input_panel').delay(delay).fadeIn(800);
 }
 
 function showResultPanel(result_fragment) {
     var delay = 0;
-    if ($('#input_panel').is(':visible')) {
-        $('#input_panel').fadeOut(800);
+    if ($('#split_input_panel').is(':visible')) {
+        $('#split_input_panel').fadeOut(800);
         delay = 800;
     }
-    $('#result_panel').html(result_fragment);
-    $('#result_panel').delay(delay).fadeIn(800);
+    if ($('#join_input_panel').is(':visible')) {
+        $('#join_input_panel').fadeOut(800);
+        delay = 800;
+    }
+    // var tabname = activeTabName();
+    var result_panel = $('#result_panel');
+    result_panel.html(result_fragment);
+    result_panel.delay(delay).fadeIn(800);
 }
 
-Dropzone.options.uploadDropzone = {
+
+Dropzone.options.splitUploadDropzone = {
     // thumbnailWidth: 600,
     // thumbnailHeight: 114,  // null,
 
@@ -151,5 +175,25 @@ Dropzone.options.uploadDropzone = {
       });
     }
 }
+
+Dropzone.options.joinUploadDropzone = {
+    // thumbnailWidth: 600,
+    // thumbnailHeight: 114,  // null,
+
+    maxFilesize: 20,
+
+    // these options limit the dropzone to a single file
+    maxFiles: 3,
+    uploadMultiple: false,
+    parallelUploads: 1,
+
+    autoProcessQueue: true,
+    addRemoveLinks: true,
+    dictDefaultMessage: 'Drop your photos (and audio) here',
+    dictResponseError: 'Server not Configured',
+    acceptedFiles: ".jpg,.jpeg,.mp4,.m4a",
+    init: Dropzone.options.splitUploadDropzone.init,
+}
+
 
 }); // close wrapper function
