@@ -1,28 +1,51 @@
 import os
-from os import path
 import shutil
 import tempfile
-from urllib.parse import urljoin
-from flask import Blueprint, render_template, flash, request, redirect, url_for, abort, jsonify, session
+from datetime import datetime
+from os import path
+import base64
+
+import magic
+from PIL import Image
+import xxhash
+from basehash import base62
+from libxmp import XMPFiles, XMPMeta
+from libxmp.consts import XMP_NS_TIFF
+
+from flask import Blueprint, render_template, flash, request, redirect, url_for, abort, jsonify
 from flask import current_app
 from flask.ext.login import login_user, logout_user, login_required
-
 from werkzeug import secure_filename
 
 from cardboardcam.extensions import cache
 from cardboardcam.forms import LoginForm, ImageForm
 from cardboardcam.models import User
 
-import magic
 
-from basehash import base62
-from hexahexacontadecimal import hexahexacontadecimal_encode_int as hh_encode_int
-import xxhash
+def _set_properties(xmp, namespace, prefix, **kwargs):
+    """
+    Takes an XMPMeta instance, an XMP namespace and prefix, and a series
+    of keyword arguments. The keyword name/value pairs are added as properties
+    to the XMP data. Types are automatically detected (except 'long') so that
+    the correct XMPMeta.set_property_* method is used.
 
-import gc
-import base64
-from libxmp.utils import file_to_dict
-from libxmp import XMPFiles, XMPMeta
+    :param xmp: libxmp.XMPMeta
+    :param namespace: str
+    :param prefix: str
+    :param kwargs: dict
+    """
+    methods = {str: xmp.set_property,
+               int: xmp.set_property_int,
+               float: xmp.set_property_float,
+               datetime: xmp.set_property_datetime,
+               bool: xmp.set_property_bool,
+               }
+    for name, value in kwargs.items():
+        methods[type(value)](namespace, '%s:%s' % (prefix, name), value)
+
+
+# monkey patch XMPMeta with our custom method
+XMPMeta.set_properties = _set_properties
 
 main = Blueprint('main', __name__)
 
@@ -68,9 +91,13 @@ def upload():
     if filesize > current_app.config.get('MAX_CONTENT_LENGTH', 20*1024*1024):
         return error_page(400, message="Image too large.")  # (400 Bad Request), malformed data from client
 
-    # only accept JPEGs that have EXIF data
-    if magic.from_file(tmp_img_path) != b'JPEG image data, EXIF standard':
+    # only accept JPEGs
+    if b'JPEG image data' not in magic.from_file(tmp_img_path):
         return error_page(400, message="No JPEG EXIF data found. Is this really a Cardboard Camera VR image ?")
+
+    # TODO: Also check for XMP data (which can exist without EXIF data, as may be
+    #       the case with images made by the joiner)
+    #       ONLY check for XMP data when splitting. Images to be joined don't require it.
 
     hash_id = get_hash_id(tmp_img_path)
     filename = hash_id + '.jpg'
@@ -111,9 +138,8 @@ def result(img_id=None):
         abort(404)
 
     # calculate the thumbnail aspect ratio and height
-    from PIL import Image
-    image = Image.open(left_img_filepath)
-    aspect = float(image.size[1]) / float(image.size[0])  # height / width
+    width, height = get_image_dimensions(left_img_filepath)
+    aspect = float(height) / float(width)
     thumb_height = str(int(600 * aspect))
 
     audio_file_url = None
@@ -142,27 +168,66 @@ def get_audio_file_name(img_filename):
     return path.splitext(img_filename)[0] + "_audio.mp4"
 
 
-def join_vr_image(left_img_filename, right_img_filename, audio_filename=None):
+def get_image_dimensions(img_filepath):
+    image = Image.open(img_filepath)
+    size = image.size
+    image.close()
+    return size
+
+def join_vr_image(left_img_filename, right_img_filename, audio_filename=None, output_filepath=None):
     XMP_NS_GPHOTOS_IMAGE = u'http://ns.google.com/photos/1.0/image/'
     XMP_NS_GPHOTOS_AUDIO = u'http://ns.google.com/photos/1.0/audio/'
+    XMP_NS_GPHOTOS_PANORAMA = u'http://ns.google.com/photos/1.0/panorama/'
 
     tmp_vr_filename = next(tempfile._get_candidate_names())  # tempfile.NamedTemporaryFile().name
     shutil.copy(left_img_filename, tmp_vr_filename)
 
-    # TODO: add extra namespaces found in .vr.jpg files
-    # xmlns:GPano="http://ns.google.com/photos/1.0/panorama/"
-    # xmlns:xmp = "http://ns.adobe.com/xap/1.0/"
-    # xmlns:tiff="http://ns.adobe.com/tiff/1.0/"
+    width, height = get_image_dimensions(tmp_vr_filename)
 
     # TODO: if left or right jpg has existing EXIF data, take it (minus the XMP part)
     #       if there is no EXIF data, add some minimal EXIF data
     #       (eg ImageWidth, ImageLength, Orientation, DateTime)
 
+    # TODO: consider adding this namespace - it seems to be in originals but
+    #       doesn't seem to matter in practise
+    # xmlns:xmp = "http://ns.adobe.com/xap/1.0/" (
+    # xmp:ModifyDate (iso8660 formatted date string)
+
     # TODO: catch XMPError ("bad schema") here
     xmpfile = XMPFiles(file_path=tmp_vr_filename, open_forupdate=True)
     xmp = xmpfile.get_xmp()
+    xmp.register_namespace(XMP_NS_GPHOTOS_PANORAMA, 'GPano')
     xmp.register_namespace(XMP_NS_GPHOTOS_IMAGE, 'GImage')
     xmp.register_namespace(XMP_NS_GPHOTOS_AUDIO, 'GAudio')
+    xmp.register_namespace(XMP_NS_TIFF, 'tiff')
+
+    # NOTE: In original Cardboard Camera photos, the GPano namespace also
+    #       has these additional namespaces associated with this
+    #       rdf:Description block. In practise, it seems to successfully
+    #       accept the photos doing it just like this, with only the
+    #       GPano namespace here (I'm not sure how to get python-xmp-toolkit
+    #       to add multiple namespaces to the same section anyhow ...)
+    # xmlns:GImage = "http://ns.google.com/photos/1.0/image/"
+    # xmlns:GAudio = "http://ns.google.com/photos/1.0/audio/"
+    # xmlns:xmpNote = "http://ns.adobe.com/xmp/note/"  (XMP_NS_XMP_Note)
+    xmp.set_properties(XMP_NS_GPHOTOS_PANORAMA,
+                       'GPano',
+                       CroppedAreaLeftPixels=0,
+                       CroppedAreaTopPixels=height - 165,
+                       CroppedAreaImageWidthPixels=width,
+                       CroppedAreaImageHeightPixels=height,
+                       FullPanoWidthPixels=width,
+                       FullPanoHeightPixels=int(height * 2.6),
+                       InitialViewHeadingDegrees=180)
+
+    xmp.set_properties(XMP_NS_TIFF,
+                       'tiff',
+                       ImageWidth=width,
+                       ImageLength=height,
+                       Orientation=0,
+                       Make='vectorcult.com',
+                       Model='')
+
 
     left_img_b64 = None
     with open(left_img_filename, 'rb') as fh:
@@ -196,7 +261,11 @@ def join_vr_image(left_img_filename, right_img_filename, audio_filename=None):
         xmpfile.put_xmp(xmp)
     xmpfile.close_file()
 
-    vr_filepath = path.join(upload_dir(), get_hash_id(tmp_vr_filename) + '.vr.jpg')
+    if output_filepath is None:
+        vr_filepath = path.join(upload_dir(), '%s.vr.jpg' % get_hash_id(tmp_vr_filename))
+    else:
+        vr_filepath = output_filepath
+
     shutil.move(tmp_vr_filename, vr_filepath)
 
     return vr_filepath
