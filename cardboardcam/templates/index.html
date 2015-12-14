@@ -45,7 +45,6 @@
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                         <meta name="csrf-token" content="{{ csrf_token() }}">
                         #}
-
                     </form>
 
                 </div>
@@ -68,6 +67,10 @@
                         #}
 
                     </form>
+                    <button id="join-submit"
+                            type="button"
+                            class="btn btn-primary btn-lg btn-block"
+                            style="display:none; margin:20px 0 20px 0;">Join</button>
 
                 </div>
               </div>

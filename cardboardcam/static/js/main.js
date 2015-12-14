@@ -88,6 +88,60 @@ function showResultPanel(result_fragment) {
     result_panel.delay(delay).fadeIn(800);
 }
 
+function _dzSend (file) {
+    console.log('upload started ', file);
+    var csrftoken = $('meta[name=csrf-token]').attr('content');
+    // console.log('csrftoken ', csrftoken);
+    file.xhr.setRequestHeader("X-CSRFToken", csrftoken);
+    $('.meter').show();
+}
+
+function _dzSuccess (file, response) {
+    console.log('successfully uploaded ', file);
+    self.processQueue();
+    console.log('response', response);
+    // window.location = response.redirect;
+    showResultPanel(response.result_fragment);
+    navToHash(response.img_id);
+}
+
+function _dzError (file, errorMessage, xhr) {
+    if (xhr && xhr.status != 200) {
+      console.log('error message: ', xhr.statusText);
+      console.log('error status: ', xhr.status);
+      showResultPanel(errorMessage);
+      // navToHash(xhr.status)
+    } else {
+      if (file.status == 'error') {
+        console.log('complete status: ', file.status);
+        var error_panel = $('.error_panel');
+        error_panel.find('#error_message').html(errorMessage);
+        error_panel.fadeIn(800);
+      }
+    }
+}
+
+function _dzRemovedFile (file) {
+    var error_panel = $('.error_panel');
+    error_panel.fadeOut(800);
+}
+
+function _countFiletypes(files) {
+    var jpeg_count = 0;
+    var mp4_count = 0;
+    for (var f in files) {
+      var fo = files[f];
+      if (fo.type == 'image/jpeg') {
+        jpeg_count++;
+      }
+      if (fo.type == 'video/mp4' || fo.type == 'audio/mp4') {
+        mp4_count++;
+      }
+    }
+
+    return { jpeg: jpeg_count,
+             mp4: mp4_count };
+}
 
 Dropzone.options.splitUploadDropzone = {
     // thumbnailWidth: 600,
@@ -110,69 +164,15 @@ Dropzone.options.splitUploadDropzone = {
       // config
       self.options.addRemoveLinks = true;
       self.options.dictRemoveFile = "Delete";
-      //New file added
-      self.on("addedfile", function (file) {
-        console.log('new file added ', file);
-      });
+
       // Send file starts
-      self.on("sending", function (file) {
-        console.log('upload started ', file);
-        var csrftoken = $('meta[name=csrf-token]').attr('content');
-        // console.log('csrftoken ', csrftoken);
-        file.xhr.setRequestHeader("X-CSRFToken", csrftoken);
-        $('.meter').show();
-      });
+      self.on("sending", _dzSend);
 
-      // File upload Progress
-      self.on('totaluploadprogress', function (progress) {
-        console.log("progress ", progress);
-        $('.roller').width(progress + '%');
-      });
+      self.on("success", _dzSuccess);
 
-      self.on("success", function (file, response) {
-        console.log('successfully uploaded ', file);
-        self.processQueue();
-        console.log('response', response);
-        // window.location = response.redirect;
-        showResultPanel(response.result_fragment);
+      self.on("error", _dzError);
 
-        navToHash(response.img_id);
-
-      });
-
-      self.on("error", function (file, errorMessage, xhr) {
-        if (xhr && xhr.status != 200) {
-          console.log('error message: ', xhr.statusText);
-          console.log('error status: ', xhr.status);
-          showResultPanel(errorMessage);
-          // navToHash(xhr.status)
-        } else {
-          if (file.status == 'error') {
-            console.log('complete status: ', file.status);
-            var error_panel = $('.error_panel');
-            error_panel.find('#error_message').html(errorMessage);
-            error_panel.fadeIn(800);
-          }
-        }
-      });
-
-      self.on("removedfile", function (file) {
-        var error_panel = $('.error_panel');
-        error_panel.fadeOut(800);
-      });
-
-      self.on("complete", function (file) {
-        console.log('complete ', file);
-      });
-
-      self.on("queuecomplete", function (progress) {
-        $('.meter').delay(999).slideUp(999);
-      });
-
-      // On removing file
-      self.on("removedfile", function (file) {
-        console.log(file);
-      });
+      self.on("removedfile", _dzRemovedFile);
     }
 }
 
@@ -180,20 +180,55 @@ Dropzone.options.joinUploadDropzone = {
     // thumbnailWidth: 600,
     // thumbnailHeight: 114,  // null,
 
-    maxFilesize: 20,
+    maxFilesize: 40,
 
     // these options limit the dropzone to a single file
     maxFiles: 3,
-    uploadMultiple: false,
-    parallelUploads: 1,
+    uploadMultiple: true,
+    parallelUploads: 100,
 
-    autoProcessQueue: true,
+    autoProcessQueue: false,
     addRemoveLinks: true,
     dictDefaultMessage: 'Drop your photos (and audio) here',
     dictResponseError: 'Server not Configured',
     acceptedFiles: ".jpg,.jpeg,.mp4,.m4a",
-    init: Dropzone.options.splitUploadDropzone.init,
-}
+    init:function(){
+      var self = this;
+      // config
+      self.options.addRemoveLinks = true;
+      self.options.dictRemoveFile = "Delete";
 
+      var submitButton = $("#join-submit");
+      submitButton.on("click", function() {
+        self.processQueue();
+      });
+
+      function updateSubmitButtonVisibility() {
+        var numberof = _countFiletypes(self.files);
+
+        if (numberof.jpeg > 2 || numberof.mp4 > 1) {
+          submitButton.fadeOut(400);
+        }
+        if (numberof.jpeg == 2 && numberof.mp4 <= 1) {
+          submitButton.fadeIn(400);
+        }
+      }
+
+      // only show the submit button only when there are the right files
+      self.on("addedfile", function(file) {
+        updateSubmitButtonVisibility();
+      });
+      self.on("removedfile", function(file) {
+        updateSubmitButtonVisibility();
+      });
+
+      // Send file starts
+      //self.on("sendingmultiple", _dzSend);
+
+      self.on("successmultiple", _dzSuccess);
+
+      self.on("errormultiple", _dzError);
+    }
+}
 
 }); // close wrapper function
