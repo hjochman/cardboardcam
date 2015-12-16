@@ -96,13 +96,18 @@ function _dzSend (file) {
     $('.meter').show();
 }
 
-function _dzSuccess (file, response) {
-    console.log('successfully uploaded ', file);
-    self.processQueue();
-    console.log('response', response);
-    // window.location = response.redirect;
-    showResultPanel(response.result_fragment);
-    navToHash(response.img_id);
+// curried success function, so we can pass in different dropzone instances
+// as self. returns a function ready to be used as the 'success' event callback.
+// in other words, this is function factory with a closure around 'self'
+function _getDzSuccessFunction (self) {
+    return function (file, response) {
+        console.log('successfully uploaded ', file);
+        self.processQueue();
+        console.log('response', response);
+        // window.location = response.redirect;
+        showResultPanel(response.result_fragment);
+        navToHash(response.img_id);
+    }
 }
 
 function _dzError (file, errorMessage, xhr) {
@@ -168,7 +173,7 @@ Dropzone.options.splitUploadDropzone = {
       // Send file starts
       self.on("sending", _dzSend);
 
-      self.on("success", _dzSuccess);
+      self.on("success", _getDzSuccessFunction(self));
 
       self.on("error", _dzError);
 
@@ -225,7 +230,7 @@ Dropzone.options.joinUploadDropzone = {
       // Send file starts
       //self.on("sendingmultiple", _dzSend);
 
-      self.on("successmultiple", _dzSuccess);
+      self.on("successmultiple", _getDzSuccessFunction(self));
 
       self.on("errormultiple", _dzError);
     }

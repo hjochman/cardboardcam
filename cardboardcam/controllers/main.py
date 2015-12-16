@@ -9,7 +9,7 @@ import magic
 from PIL import Image  # from Pillow package
 import xxhash
 from basehash import base62
-from libxmp import XMPFiles, XMPMeta
+from libxmp import XMPFiles, XMPMeta, XMPError
 from libxmp.consts import XMP_NS_TIFF
 
 from flask import Blueprint, render_template, flash, request, redirect, url_for, abort, jsonify
@@ -20,6 +20,10 @@ from werkzeug import secure_filename
 from cardboardcam.extensions import cache
 from cardboardcam.forms import LoginForm, ImageForm
 from cardboardcam.models import User
+
+XMP_NS_GPHOTOS_IMAGE = u'http://ns.google.com/photos/1.0/image/'
+XMP_NS_GPHOTOS_AUDIO = u'http://ns.google.com/photos/1.0/audio/'
+XMP_NS_GPHOTOS_PANORAMA = u'http://ns.google.com/photos/1.0/panorama/'
 
 
 def _set_properties(xmp, namespace, prefix, **kwargs):
@@ -75,8 +79,31 @@ def about():
     return render_template('about.html')
 
 
-@main.route('/upload', methods=['POST'])
-def upload():
+def check_jpeg(img_path, require_xmp=False):
+
+    message = None
+
+    # don't accept huge files
+    filesize = os.stat(img_path).st_size
+    if filesize > current_app.config.get('MAX_CONTENT_LENGTH', 20 * 1024 * 1024):
+        message = "Image too large."
+
+    # only accept JPEGs
+    if b'image/jpeg' not in magic.from_file(img_path, mime=True):
+        message = "No JPEG data found. Is this really a Cardboard Camera VR image ?"
+
+    if require_xmp:
+        try:
+            xmpfile = XMPFiles(file_path=img_path)
+            xmpfile.get_xmp()
+        except XMPError:
+            message = "JPEG does not contain valid XMP data."
+
+    return message
+
+
+@main.route('/split/upload', methods=['POST'])
+def upload_for_split():
     # TODO: compare CSRF token from request and session
     # http://flask.pocoo.org/snippets/3/
     # current_app.logger.debug(session['csrf_token'] + ',' + request.headers.get('X-CSRFToken', 'None'))
@@ -86,14 +113,11 @@ def upload():
     tmp_img_path = path.join(upload_dir(), tmp_filename)
     file.save(tmp_img_path)
 
-    # don't accept huge files
-    filesize = os.stat(tmp_img_path).st_size
-    if filesize > current_app.config.get('MAX_CONTENT_LENGTH', 20*1024*1024):
-        return error_page(400, message="Image too large.")  # (400 Bad Request), malformed data from client
+    jpeg_error_message = check_jpeg(tmp_img_path)
 
-    # only accept JPEGs
-    if b'JPEG image data' not in magic.from_file(tmp_img_path):
-        return error_page(400, message="No JPEG EXIF data found. Is this really a Cardboard Camera VR image ?")
+    if jpeg_error_message is not None:
+        # (400 Bad Request), malformed data from client
+        return error_page(400, message=jpeg_error_message)
 
     # TODO: Also check for XMP data (which can exist without EXIF data, as may be
     #       the case with images made by the joiner)
@@ -110,14 +134,58 @@ def upload():
         abort(500)
 
     # return jsonify({'redirect': url_for('main.result', img_filename=filename)})
-    return jsonify({'result_fragment': result(img_id=hash_id), 'img_id': hash_id})
+    return jsonify({'result_split_fragment': result(img_id=hash_id), 'img_id': hash_id})
     # return redirect(url_for('main.result', img_filename=filename))
 
 
-@main.route('/join', methods=['POST'])
+@main.route('/join/upload', methods=['POST'])
 def upload_for_join():
-    # TODO: Actually do join here ...
-    return upload()
+    # this is a list of all the files in the form
+    files = request.files
+
+    filepaths = []
+    for file in files.values():
+        if not file:
+            continue
+        tmp_suffix = next(tempfile._get_candidate_names())
+        safe_filename = secure_filename(file.filename)
+        tmp_img_path = path.join(upload_dir(), '%s.%s' % (safe_filename, tmp_suffix))
+        with open(tmp_img_path, 'wb') as f:
+            f.write(file.read())
+        filepaths.append(tmp_img_path)
+
+    left = None
+    right = None
+    audio = None
+    for fp in filepaths:
+        mimetype = magic.from_file(fp, mime=True)
+        if b'image/jpeg' in mimetype:
+            # TODO: split path to test for left right in name only
+            fn = fp.lower()
+            if 'left' in fn or right is not None:
+                left = fp
+                continue
+            if 'right' in fn or left is not None:
+                right = fp
+                continue
+        # NOTE: mimetype only every seems to be video/mp4, however I've included a few
+        # other likely candidates to be inclusive. if broken audio is being reported,
+        # maybe remove those others
+        if mimetype in [b'video/mp4',
+                        b'audio/mp4a-latm',
+                        b'audio/mp4']:
+            audio = fp
+    
+    if left is None or right is None:
+        error_page(404, 'Two JPEG images with "left" and "right" in '
+                        'the names are requured')
+    
+    if get_image_dimensions(left) != get_image_dimensions(right):
+        error_page(400, 'Images must be the same dimensions')
+
+    vr_filepath = join_vr_image(left, right, audio)
+    hash_id = path.basename(vr_filepath.split('.')[0])
+    return jsonify({'result_fragment': result_join(img_id=hash_id), 'img_id': hash_id})
 
 
 def get_hash_id(filepath):
@@ -129,8 +197,23 @@ def get_hash_id(filepath):
 
 
 @main.route('/<img_id>', methods=['GET'])
+def result_join(img_id=None):
+    img_filename = '%s.vr.jpg' % img_id
+    img_filepath = path.join(upload_dir(), img_filename)
+
+    if not path.isfile(img_filepath):
+        abort(404)
+
+    thumb_height = calculate_thumbnail_height(img_filepath)
+    template = 'result_join_fragment.html'
+    return render_template(template,
+                           img_path=img_filename,
+                           thumb_height=thumb_height)
+
+
+@main.route('/<img_id>', methods=['GET'])
 def result(img_id=None):
-    img_filename = img_id + '.jpg'
+    img_filename = '%s.jpg' % img_id
     upload_folder = upload_dir()
     left_img = get_image_name(img_filename, 'left')
     right_img = get_image_name(img_filename, 'right')
@@ -142,30 +225,21 @@ def result(img_id=None):
     else:
         abort(404)
 
-    # calculate the thumbnail aspect ratio and height
-    width, height = get_image_dimensions(left_img_filepath)
-    aspect = float(height) / float(width)
-    thumb_height = str(int(600 * aspect))
+    thumb_height = calculate_thumbnail_height(left_img_filepath)
 
     audio_file_url = None
     if path.isfile(audio_file):
         audio_file_url = url_for('static', filename='uploads/' + get_audio_file_name(img_filename))
 
-    # input_file_url = url_for('static', filename='uploads/' + img_filename)
-    # second_image_url = url_for('static', filename='uploads/' + get_second_image_name(img_filename))
-    # template = 'result.html'
     template = 'result_fragment.html'
     return render_template(template,
-                           # input_img=input_file_url,
-                           # second_img=second_image_url,
-                           # audio_file_url=audio_file_url,
                            audio_file=audio_file_url,
                            left_img=left_img,
                            right_img=right_img,
                            thumb_height=thumb_height)
 
 
-def get_image_name(img_filename, eye : str) -> str:
+def get_image_name(img_filename: str, eye: str) -> str:
     return path.splitext(img_filename)[0] + "_%s.jpg" % eye
 
 
@@ -180,10 +254,26 @@ def get_image_dimensions(img_filepath):
     return size
 
 
+def calculate_thumbnail_height(img_filepath: str, thumbnail_width=600) -> int:
+    """
+    Calculated the height for a thumbnail image to maintain the aspect ratio,
+    given the desired width.
+
+    :param img_filepath: The path to the image file
+    :type img_filepath: str
+    :param thumbnail_width: The target thumbnail width
+    :type thumbnail_width: int
+    :return: The thumbnail height, given the target width
+    :rtype: int
+    """
+    # calculate the thumbnail aspect ratio and height
+    width, height = get_image_dimensions(img_filepath)
+    aspect = float(height) / float(width)
+    thumb_height = str(int(thumbnail_width * aspect))
+    return thumb_height
+
+
 def join_vr_image(left_img_filename, right_img_filename, audio_filename=None, output_filepath=None):
-    XMP_NS_GPHOTOS_IMAGE = u'http://ns.google.com/photos/1.0/image/'
-    XMP_NS_GPHOTOS_AUDIO = u'http://ns.google.com/photos/1.0/audio/'
-    XMP_NS_GPHOTOS_PANORAMA = u'http://ns.google.com/photos/1.0/panorama/'
 
     tmp_vr_filename = next(tempfile._get_candidate_names())  # tempfile.NamedTemporaryFile().name
     shutil.copy(left_img_filename, tmp_vr_filename)
@@ -278,8 +368,6 @@ def join_vr_image(left_img_filename, right_img_filename, audio_filename=None, ou
 
 
 def split_vr_image(img_filename):
-    XMP_NS_GPHOTOS_IMAGE = u'http://ns.google.com/photos/1.0/image/'
-    XMP_NS_GPHOTOS_AUDIO = u'http://ns.google.com/photos/1.0/audio/'
 
     # TODO: catch XMPError ("bad schema") here
     xmpfile = XMPFiles(file_path=img_filename, open_forupdate=True)
