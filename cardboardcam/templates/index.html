@@ -53,7 +53,7 @@
               <div id="join_tab" role="tabpanel" class="tab-pane fade in">
                 <div id="join_input_panel" style="display:none;">
                   <a href="#"></a>
-                  <h1>You bring the Cardboard, we'll provide the glue.</h1>
+                  <h1>Glue for your Cardboard.</h1>
                   <h3>Two JPEGs (same size). One MP4 audio file.</h3>
 
                     <form action="{{ url_for('.upload_for_join') }}"
@@ -67,10 +67,14 @@
                         #}
 
                     </form>
+                    <em>Include the word <code>left</code> or <code>right</code> in the
+                        image filenames to properly assign to each eye</em>
                     <button id="join-submit"
                             type="button"
                             class="btn btn-primary btn-lg btn-block"
                             style="display:none; margin:20px 0 20px 0;">Join</button>
+
+
 
                 </div>
               </div>
