@@ -113,15 +113,11 @@ def upload_for_split():
     tmp_img_path = path.join(upload_dir(), tmp_filename)
     file.save(tmp_img_path)
 
-    jpeg_error_message = check_jpeg(tmp_img_path)
+    jpeg_error_message = check_jpeg(tmp_img_path, require_xmp=True)
 
     if jpeg_error_message is not None:
         # (400 Bad Request), malformed data from client
         return error_page(400, message=jpeg_error_message)
-
-    # TODO: Also check for XMP data (which can exist without EXIF data, as may be
-    #       the case with images made by the joiner)
-    #       ONLY check for XMP data when splitting. Images to be joined don't require it.
 
     hash_id = get_hash_id(tmp_img_path)
     filename = hash_id + '.jpg'
@@ -134,7 +130,7 @@ def upload_for_split():
         abort(500)
 
     # return jsonify({'redirect': url_for('main.result', img_filename=filename)})
-    return jsonify({'result_split_fragment': result(img_id=hash_id), 'img_id': hash_id})
+    return jsonify({'result_fragment': result(img_id=hash_id), 'img_id': hash_id})
     # return redirect(url_for('main.result', img_filename=filename))
 
 
@@ -160,8 +156,7 @@ def upload_for_join():
     for fp in filepaths:
         mimetype = magic.from_file(fp, mime=True)
         if b'image/jpeg' in mimetype:
-            # TODO: split path to test for left right in name only
-            fn = fp.lower()
+            fn = path.basename(fp).lower()
             if 'left' in fn or right is not None:
                 left = fp
                 continue
@@ -177,9 +172,15 @@ def upload_for_join():
             audio = fp
     
     if left is None or right is None:
-        error_page(404, 'Two JPEG images with "left" and "right" in '
-                        'the names are requured')
-    
+        error_page(400, 'Two JPEG images with "left" and "right" in '
+                        'the names are required')
+
+    for i in [left, right]:
+        jpeg_error_message = check_jpeg(i, require_xmp=False)
+        if jpeg_error_message is not None:
+            # (400 Bad Request), malformed data from client
+            return error_page(400, message=jpeg_error_message)
+
     if get_image_dimensions(left) != get_image_dimensions(right):
         error_page(400, 'Images must be the same dimensions')
 
@@ -231,7 +232,7 @@ def result(img_id=None):
     if path.isfile(audio_file):
         audio_file_url = url_for('static', filename='uploads/' + get_audio_file_name(img_filename))
 
-    template = 'result_fragment.html'
+    template = 'result_split_fragment.html'
     return render_template(template,
                            audio_file=audio_file_url,
                            left_img=left_img,
