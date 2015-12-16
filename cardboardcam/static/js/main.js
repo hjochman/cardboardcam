@@ -19,7 +19,7 @@ $(window).trigger('hashchange');
 
 // tab toggle event
 $('a[data-toggle="tab"]').on('shown.bs.tab', function (event) {
-    console.log($(event.target).attr('aria-controls'));
+    //console.log($(event.target).attr('aria-controls'));
     navToHash('');
     Dropzone.forElement("#split-upload-dropzone").removeAllFiles(true);
     Dropzone.forElement("#join-upload-dropzone").removeAllFiles(true)
@@ -55,8 +55,14 @@ function navToHash(hash) {
 }
 
 function activeTabName() {
-    if ($("ul#split_tab_buton li.active")) { console.log('split'); return 'split'; }
-    if ($("ul#join_tab_buton li.active")) { console.log('join'); return 'join'; }
+    if ($("ul#split_tab_buton li.active")) {
+      //console.log('split');
+      return 'split';
+    }
+    if ($("ul#join_tab_buton li.active")) {
+      //console.log('join');
+      return 'join';
+    }
 }
 
 function showInputPanel() {
@@ -89,7 +95,7 @@ function showResultPanel(result_fragment) {
 }
 
 function _dzSend (file) {
-    console.log('upload started ', file);
+    //console.log('upload started ', file);
     var csrftoken = $('meta[name=csrf-token]').attr('content');
     // console.log('csrftoken ', csrftoken);
     file.xhr.setRequestHeader("X-CSRFToken", csrftoken);
@@ -101,9 +107,9 @@ function _dzSend (file) {
 // in other words, this is function factory with a closure around 'self'
 function _getDzSuccessFunction (self) {
     return function (file, response) {
-        console.log('successfully uploaded ', file);
+        //console.log('successfully uploaded ', file);
         self.processQueue();
-        console.log('response', response);
+        //console.log('response', response);
         // window.location = response.redirect;
         showResultPanel(response.result_fragment);
         navToHash(response.img_id);
@@ -112,13 +118,13 @@ function _getDzSuccessFunction (self) {
 
 function _dzError (file, errorMessage, xhr) {
     if (xhr && xhr.status != 200) {
-      console.log('error message: ', xhr.statusText);
-      console.log('error status: ', xhr.status);
+      //console.log('error message: ', xhr.statusText);
+      //console.log('error status: ', xhr.status);
       showResultPanel(errorMessage);
       // navToHash(xhr.status)
     } else {
       if (file.status == 'error') {
-        console.log('complete status: ', file.status);
+        //console.log('complete status: ', file.status);
         var error_panel = $('.error_panel');
         error_panel.find('#error_message').html(errorMessage);
         error_panel.fadeIn(800);
