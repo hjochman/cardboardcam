@@ -29,4 +29,16 @@
         <a href="{{ audio_file }}" download>Download audio</a>
     </div>
 </div>
+{% if img_metadata %}
+<div class="row">
+    <div class="col-md-10">
+        <h2>Image metadata</h2>
+        <table class="table table-condensed table-hover">
+        {% for key, value in img_metadata.items() %}
+        <tr><td><samp>{{ key }}</samp></td><td><samp>{{ value }}</samp></td></tr>
+        {% endfor %}
+        </table>
+    </div>
+</div>
+{% endif %}
 {% endif %}

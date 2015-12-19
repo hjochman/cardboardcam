@@ -4,6 +4,7 @@ import tempfile
 from datetime import datetime
 from os import path
 import base64
+from collections import OrderedDict
 
 import magic
 from PIL import Image  # from Pillow package
@@ -26,7 +27,12 @@ XMP_NS_GPHOTOS_AUDIO = u'http://ns.google.com/photos/1.0/audio/'
 XMP_NS_GPHOTOS_PANORAMA = u'http://ns.google.com/photos/1.0/panorama/'
 
 
-def _set_properties(xmp, namespace, prefix, **kwargs):
+def _get_xmp_properties(xmp: XMPMeta, namespace: str, prefix: str, properties: list) -> dict:
+    return OrderedDict([('%s:%s' % (prefix, prop), xmp.get_property(namespace, '%s:%s' % (prefix, prop)))
+                        for prop in properties])
+
+
+def _set_xmp_properties(xmp: XMPMeta, namespace: str, prefix: str, **kwargs):
     """
     Takes an XMPMeta instance, an XMP namespace and prefix, and a series
     of keyword arguments. The keyword name/value pairs are added as properties
@@ -48,8 +54,9 @@ def _set_properties(xmp, namespace, prefix, **kwargs):
         methods[type(value)](namespace, '%s:%s' % (prefix, name), value)
 
 
-# monkey patch XMPMeta with our custom method
-XMPMeta.set_properties = _set_properties
+# monkey patch XMPMeta with our custom methods
+XMPMeta.set_properties = _set_xmp_properties
+XMPMeta.get_properties = _get_xmp_properties
 
 main = Blueprint('main', __name__)
 
@@ -124,13 +131,14 @@ def upload_for_split():
     img_path = path.join(upload_dir(), filename)
     shutil.move(tmp_img_path, img_path)
 
+    vr_image_metadata = {}
     try:
-        split_vr_image(img_path)
+        l, r, a, vr_image_metadata = split_vr_image(img_path)
     except Exception as e:
         abort(500)
 
     # return jsonify({'redirect': url_for('main.result', img_filename=filename)})
-    return jsonify({'result_fragment': result(img_id=hash_id), 'img_id': hash_id})
+    return jsonify({'result_fragment': result(img_id=hash_id, img_metadata=vr_image_metadata), 'img_id': hash_id})
     # return redirect(url_for('main.result', img_filename=filename))
 
 
@@ -213,7 +221,7 @@ def result_join(img_id=None):
 
 
 @main.route('/<img_id>', methods=['GET'])
-def result(img_id=None):
+def result(img_id=None, img_metadata=None):
     img_filename = '%s.jpg' % img_id
     upload_folder = upload_dir()
     left_img = get_image_name(img_filename, 'left')
@@ -237,7 +245,8 @@ def result(img_id=None):
                            audio_file=audio_file_url,
                            left_img=left_img,
                            right_img=right_img,
-                           thumb_height=thumb_height)
+                           thumb_height=thumb_height,
+                           img_metadata=img_metadata)
 
 
 def get_image_name(img_filename: str, eye: str) -> str:
@@ -374,6 +383,17 @@ def split_vr_image(img_filename):
     xmpfile = XMPFiles(file_path=img_filename, open_forupdate=True)
     xmp = xmpfile.get_xmp()
 
+    pano_properties = [
+        u'CroppedAreaLeftPixels',
+        u'CroppedAreaTopPixels',
+        u'CroppedAreaImageWidthPixels',
+        u'CroppedAreaImageHeightPixels',
+        u'FullPanoWidthPixels',
+        u'FullPanoHeightPixels',
+        u'InitialViewHeadingDegrees',
+    ]
+    metadata = xmp.get_properties(XMP_NS_GPHOTOS_PANORAMA, 'GPano', pano_properties)
+
     right_image_b64, right_img_filename = None, None
     audio_b64, audio_filename = None, None
 
@@ -421,7 +441,7 @@ def split_vr_image(img_filename):
     left_img_filename = get_image_name(img_filename, 'left')
     shutil.move(img_filename, left_img_filename)
 
-    return left_img_filename, right_img_filename, audio_filename
+    return left_img_filename, right_img_filename, audio_filename, metadata
 
 
 @main.errorhandler(404)
