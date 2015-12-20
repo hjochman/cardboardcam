@@ -49,7 +49,7 @@
              role="tabpanel"
              aria-labelledby="join-advanced-panel">
           <div class="panel-body">
-            <i>Advanced XMP properties</i>
+            <i>XMP properties</i>
 
               {% for field in gpano_advanced %}
                   <div class="form-group">
@@ -57,7 +57,7 @@
                       {{ field.label(class="sr-only") }}
                       <div class="input-group">
                           <div class="input-group-addon">{{ field.label.text }}</div>
-                          {{ field(form="join-upload-dropzone", class="form-control") }}
+                          {{ field(form="join-upload-dropzone", class="form-control", placeholder="guess") }}
                       </div>
                   </div>
               {% endfor %}
