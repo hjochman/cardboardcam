@@ -35,82 +35,14 @@
             <div class="tab-content">
               <div id="split_tab" role="tabpanel" class="tab-pane fade in active">
 
-                <div id="split_input_panel" style="display:none;">
-                  <a href="#"></a>
-                  <h1>Let's get splittin'</h1>
-                  <h3>Cardboard Camera JPEG (.vr.jpg)</h3>
+              {% include 'split_form.html' %}
 
-                    <form action="{{ url_for('.upload_for_split') }}"
-                          method="POST"
-                          enctype="multipart/form-data"
-                          class="dropzone"
-                          id="split-upload-dropzone">
-                        {#
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                        <meta name="csrf-token" content="{{ csrf_token() }}">
-                        #}
-                    </form>
-
-                </div>
               </div>
 
               <div id="join_tab" role="tabpanel" class="tab-pane fade in">
-                <div id="join_input_panel" style="display:none;">
-                  <a href="#"></a>
-                  <h1>Glue for your Cardboard.</h1>
-                  <h3>Two JPEGs (same size). One MP4 audio file.</h3>
 
-                    <form action="{{ url_for('.upload_for_join') }}"
-                          method="POST"
-                          enctype="multipart/form-data"
-                          class="dropzone"
-                          id="join-upload-dropzone">
-                        {#
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                        <meta name="csrf-token" content="{{ csrf_token() }}">
-                        #}
+              {% include 'join_form.html' %}
 
-                    </form>
-                    <em>Include the word <code>left</code> or <code>right</code> in the
-                        image filenames to properly assign to each eye</em>
-                    <button id="join-submit"
-                            type="button"
-                            class="btn btn-primary btn-lg btn-block"
-                            style="display:none; margin:20px 0 20px 0;">Join</button>
-
-                    <hr>
-
-                    <div class="panel-group"
-                         id="join-advanced-collapsable"
-                         role="tablist"
-                         aria-multiselectable="true">
-                      <div class="panel panel-default">
-                        <div class="panel-heading" role="tab" id="join-advanced-heading">
-                          <div class="panel-title">
-                            <a class="collapsed"
-                               role="button"
-                               data-toggle="collapse"
-                               data-parent="#join-advanced-collapsable"
-                               href="#join-advanced-panel"
-                               aria-expanded="false"
-                               aria-controls="join-advanced-panel">
-                              Advanced <span class="caret"></span>
-                            </a>
-                          </div>
-                        </div>
-                        <div id="join-advanced-panel"
-                             class="panel-collapse collapse"
-                             role="tabpanel"
-                             aria-labelledby="join-advanced-panel">
-                          <div class="panel-body">
-                            <i>Advanced settings (CroppedArea* & FullPano*) coming soon.</i>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-
-                </div>
               </div>
 
             </div>

@@ -1,0 +1,77 @@
+<div id="join_input_panel" style="display:none;">
+  <a href="#"></a>
+  <h1>Glue for your Cardboard.</h1>
+  <h3>Two JPEGs (same size). One MP4 audio file.</h3>
+
+    <form action="{{ url_for('.upload_for_join') }}"
+          method="POST"
+          enctype="multipart/form-data"
+          class="dropzone"
+          id="join-upload-dropzone">
+        {#
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+        #}
+    </form>
+    <em>Include the word <code>left</code> or <code>right</code> in the
+        image filenames to properly assign to each eye</em>
+    <button id="join-submit"
+            type="button"
+            class="btn btn-primary btn-lg btn-block"
+            style="display:none; margin:20px 0 20px 0;">Join</button>
+
+    <hr>
+
+    <div class="panel-group"
+         id="join-advanced-collapsable"
+         role="tablist"
+         aria-multiselectable="true">
+      <div class="panel panel-default">
+        <div class="panel-heading" role="tab" id="join-advanced-heading">
+          <div class="panel-title">
+            <a class="collapsed"
+               role="button"
+               data-toggle="collapse"
+               data-parent="#join-advanced-collapsable"
+               href="#join-advanced-panel"
+               aria-expanded="false"
+               aria-controls="join-advanced-panel">
+              Advanced <span class="caret"></span>
+            </a>
+          </div>
+        </div>
+        <div id="join-advanced-panel"
+             class="panel-collapse collapse"
+             role="tabpanel"
+             aria-labelledby="join-advanced-panel">
+          <div class="panel-body">
+            <i>Advanced XMP properties</i>
+              {#
+              {% for property in xmp_properties %}
+              <div class="form-group">
+               <label class="sr-only" for="{{ property }}">{{ property }}</label>
+               <div class="input-group">
+                   <div class="input-group-addon">{{ property }}</div>
+                   <input form="join-upload-dropzone" type="text" class="form-control"
+                          id="{{ property }}" placeholder="0">
+               </div>
+              </div>
+              {% endfor %}
+              #}
+
+              {% for field in gpano_advanced %}
+                  <div class="form-group">
+                      {# <label class="sr-only" for="{{ field.name }}">{{ field.name }}</label> #}
+                      {{ field.label(class="sr-only") }}
+                      <div class="input-group">
+                          <div class="input-group-addon">{{ field.label.text }}</div>
+                          {{ field(form="join-upload-dropzone", class="form-control") }}
+                      </div>
+                  </div>
+              {% endfor %}
+
+          </div>
+        </div>
+      </div>
+    </div>
+</div>

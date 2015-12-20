@@ -18,13 +18,26 @@ from flask import current_app
 from flask.ext.login import login_user, logout_user, login_required
 from werkzeug import secure_filename
 
+from wtforms import IntegerField
+from wtforms import validators
+
 from cardboardcam.extensions import cache
-from cardboardcam.forms import LoginForm, ImageForm
+from cardboardcam.forms import LoginForm, JoinAdvancedXmpFields
 from cardboardcam.models import User
 
 XMP_NS_GPHOTOS_IMAGE = u'http://ns.google.com/photos/1.0/image/'
 XMP_NS_GPHOTOS_AUDIO = u'http://ns.google.com/photos/1.0/audio/'
 XMP_NS_GPHOTOS_PANORAMA = u'http://ns.google.com/photos/1.0/panorama/'
+
+GPANO_PROPERTIES = [
+    u'CroppedAreaLeftPixels',
+    u'CroppedAreaTopPixels',
+    u'CroppedAreaImageWidthPixels',
+    u'CroppedAreaImageHeightPixels',
+    u'FullPanoWidthPixels',
+    u'FullPanoHeightPixels',
+    u'InitialViewHeadingDegrees',
+]
 
 
 def _get_xmp_properties(xmp: XMPMeta, namespace: str, prefix: str, properties: list) -> dict:
@@ -72,12 +85,36 @@ def upload_dir():
     return current_app.config.get('UPLOAD_FOLDER', '/tmp')
 
 
+def create_gpano_xmp_form_fields(width, height):
+    fields = OrderedDict()
+    for p in GPANO_PROPERTIES:
+        label = u'GPano:%s' % p
+        fields[label] = IntegerField(label=label,
+                                 default=0,
+                                 validators=[validators.required(),
+                                             validators.NumberRange(min=0)])
+
+    fields[u'GPano:CroppedAreaLeftPixels'].default = 0
+    fields[u'GPano:CroppedAreaTopPixels'].default = height - 165
+    fields[u'GPano:CroppedAreaImageWidthPixels'].default = width
+    fields[u'GPano:CroppedAreaImageHeightPixels'].default = height
+    fields[u'GPano:FullPanoWidthPixels'].default = width
+    fields[u'GPano:FullPanoHeightPixels'].default = height * 2.6
+    fields[u'GPano:InitialViewHeadingDegrees'].default = 180
+
+    return fields
+
+
 @main.route('/', methods=['GET'])
 @cache.cached(timeout=1000)
 def home():
-    form = ImageForm()
+    gpano_xmp_advanced_fields = JoinAdvancedXmpFields(csrf_enabled=False)
     filename = None
-    return render_template('index.html', form=form, filename=filename)
+    xmp_properties = ['GPano:%s' % p for p in GPANO_PROPERTIES]
+    return render_template('index.html',
+                           filename=filename,
+                           xmp_properties=xmp_properties,
+                           gpano_advanced=gpano_xmp_advanced_fields)
 
 
 @main.route('/about', methods=['GET'])
@@ -383,16 +420,7 @@ def split_vr_image(img_filename):
     xmpfile = XMPFiles(file_path=img_filename, open_forupdate=True)
     xmp = xmpfile.get_xmp()
 
-    pano_properties = [
-        u'CroppedAreaLeftPixels',
-        u'CroppedAreaTopPixels',
-        u'CroppedAreaImageWidthPixels',
-        u'CroppedAreaImageHeightPixels',
-        u'FullPanoWidthPixels',
-        u'FullPanoHeightPixels',
-        u'InitialViewHeadingDegrees',
-    ]
-    metadata = xmp.get_properties(XMP_NS_GPHOTOS_PANORAMA, 'GPano', pano_properties)
+    metadata = xmp.get_properties(XMP_NS_GPHOTOS_PANORAMA, 'GPano', GPANO_PROPERTIES)
 
     right_image_b64, right_img_filename = None, None
     audio_b64, audio_filename = None, None

@@ -2,7 +2,7 @@ from flask.ext.cache import Cache
 from flask.ext.debugtoolbar import DebugToolbarExtension
 from flask.ext.login import LoginManager
 from flask_assets import Environment
-from flask_wtf.csrf import CsrfProtect
+# from flask_wtf.csrf import CsrfProtect
 from flask.ext.thumbnails import Thumbnail
 
 from cardboardcam.models import User

@@ -11,6 +11,11 @@
     margin: 20px 0;
 }
 
+.input-group-addon {
+    min-width: 85%;
+    text-align: left;
+}
+
 /* Sticky footer styles
 -------------------------------------------------- */
 html {
