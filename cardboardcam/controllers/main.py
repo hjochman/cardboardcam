@@ -184,6 +184,8 @@ def upload_for_join():
     # this is a list of all the files in the form
     files = request.files
 
+    form = request.form
+
     filepaths = []
     for file in files.values():
         if not file:

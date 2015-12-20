@@ -1,19 +1,26 @@
 .container {
-    margin-top: 60px;
-    /*
-    width: auto;
-    max-width: 680px;
-    */
-    padding: 0 15px;
+  margin-top: 60px;
+  /*
+  width: auto;
+  max-width: 680px;
+  */
+  padding: 0 15px;
 }
 
 .text-muted {
-    margin: 20px 0;
+  margin: 20px 0;
 }
 
 .input-group-addon {
-    min-width: 85%;
-    text-align: left;
+  min-width: 85%;
+  text-align: left;
+}
+
+.dropzone-dropzone {
+  min-height: 150px;
+  border: 2px dashed rgba(0, 0, 0, 0.3);
+  background: white;
+  padding: 20px 20px;
 }
 
 /* Sticky footer styles

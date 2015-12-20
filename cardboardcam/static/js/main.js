@@ -167,9 +167,10 @@ Dropzone.options.splitUploadDropzone = {
 
     autoProcessQueue: true,
     addRemoveLinks: true,
-    dictDefaultMessage: 'Drop your photo here',
+    dictDefaultMessage: '',
     dictResponseError: 'Server not Configured',
     acceptedFiles: ".jpg,.jpeg",
+    previewsContainer: '.dropzone-previews-split',
     init:function(){
       var self = this;
       // config
@@ -200,9 +201,10 @@ Dropzone.options.joinUploadDropzone = {
 
     autoProcessQueue: false,
     addRemoveLinks: true,
-    dictDefaultMessage: 'Drop your photos (and audio) here',
+    dictDefaultMessage: '',
     dictResponseError: 'Server not Configured',
     acceptedFiles: ".jpg,.jpeg,.mp4,.m4a",
+    previewsContainer: '.dropzone-previews-join',
     init:function(){
       var self = this;
       // config
