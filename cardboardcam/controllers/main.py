@@ -64,7 +64,9 @@ def _set_xmp_properties(xmp: XMPMeta, namespace: str, prefix: str, **kwargs):
                bool: xmp.set_property_bool,
                }
     for name, value in kwargs.items():
-        methods[type(value)](namespace, '%s:%s' % (prefix, name), value)
+        func = methods.get(type(value), None)
+        if func is not None:
+            func(namespace, '%s:%s' % (prefix, name), value)
 
 
 # monkey patch XMPMeta with our custom methods
@@ -181,10 +183,26 @@ def upload_for_split():
 
 @main.route('/join/upload', methods=['POST'])
 def upload_for_join():
+    gpano_xmp_advanced_fields = JoinAdvancedXmpFields(csrf_enabled=False)
+    
+    # if not gpano_xmp_advanced_fields.validate():
+    #     return error_page(400, message="Invalid GPano XMP properties.")
+
+    # make a dictionary of all valid 'advanced' settings from the form
+    # blank empty string fields become None
+    gpano_xmp_properties = {}
+    for k, v in request.form.items():
+        if k in GPANO_PROPERTIES:
+            try:
+                if v.strip() == '':
+                    gpano_xmp_properties[k] = None
+                else:
+                    gpano_xmp_properties[k] = int(v)
+            except ValueError:
+                return error_page(400, message="Invalid GPano XMP properties.")
+
     # this is a list of all the files in the form
     files = request.files
-
-    form = request.form
 
     filepaths = []
     for file in files.values():
@@ -231,7 +249,7 @@ def upload_for_join():
     if get_image_dimensions(left) != get_image_dimensions(right):
         error_page(400, 'Images must be the same dimensions')
 
-    vr_filepath = join_vr_image(left, right, audio)
+    vr_filepath = join_vr_image(left, right, audio, **gpano_xmp_properties)
     hash_id = path.basename(vr_filepath.split('.')[0])
     return jsonify({'result_fragment': result_join(img_id=hash_id), 'img_id': hash_id})
 
@@ -322,12 +340,34 @@ def calculate_thumbnail_height(img_filepath: str, thumbnail_width=600) -> int:
     return thumb_height
 
 
-def join_vr_image(left_img_filename, right_img_filename, audio_filename=None, output_filepath=None):
+def join_vr_image(left_img_filename, right_img_filename, audio_filename=None, output_filepath=None,
+                  CroppedAreaLeftPixels=None,
+                  CroppedAreaTopPixels=None,
+                  CroppedAreaImageWidthPixels=None,
+                  CroppedAreaImageHeightPixels=None,
+                  FullPanoWidthPixels=None,
+                  FullPanoHeightPixels=None,
+                  InitialViewHeadingDegrees=None):
 
     tmp_vr_filename = next(tempfile._get_candidate_names())  # tempfile.NamedTemporaryFile().name
     shutil.copy(left_img_filename, tmp_vr_filename)
 
     width, height = get_image_dimensions(tmp_vr_filename)
+
+    if CroppedAreaLeftPixels is None:
+        CroppedAreaLeftPixels = 0
+    if CroppedAreaTopPixels is None:
+        CroppedAreaTopPixels = height - 165
+    if CroppedAreaImageWidthPixels is None:
+        CroppedAreaImageWidthPixels = width
+    if CroppedAreaImageHeightPixels is None:
+        CroppedAreaImageHeightPixels = height
+    if FullPanoWidthPixels is None:
+        FullPanoWidthPixels = width
+    if FullPanoHeightPixels is None:
+        FullPanoHeightPixels = height
+    if InitialViewHeadingDegrees is None:
+        InitialViewHeadingDegrees = 180
 
     # TODO: if left or right jpg has existing EXIF data, take it (minus the XMP part)
     #       if there is no EXIF data, add some minimal EXIF data
@@ -357,13 +397,13 @@ def join_vr_image(left_img_filename, right_img_filename, audio_filename=None, ou
     # xmlns:xmpNote = "http://ns.adobe.com/xmp/note/"  (XMP_NS_XMP_Note)
     xmp.set_properties(XMP_NS_GPHOTOS_PANORAMA,
                        'GPano',
-                       CroppedAreaLeftPixels=0,
-                       CroppedAreaTopPixels=height - 165,
-                       CroppedAreaImageWidthPixels=width,
-                       CroppedAreaImageHeightPixels=height,
-                       FullPanoWidthPixels=width,
-                       FullPanoHeightPixels=int(height * 2.6),
-                       InitialViewHeadingDegrees=180)
+                       CroppedAreaLeftPixels=CroppedAreaLeftPixels,
+                       CroppedAreaTopPixels=CroppedAreaTopPixels,
+                       CroppedAreaImageWidthPixels=CroppedAreaImageWidthPixels,
+                       CroppedAreaImageHeightPixels=CroppedAreaImageHeightPixels,
+                       FullPanoWidthPixels=FullPanoWidthPixels,
+                       FullPanoHeightPixels=FullPanoHeightPixels,
+                       InitialViewHeadingDegrees=InitialViewHeadingDegrees)
 
     xmp.set_properties(XMP_NS_TIFF,
                        'tiff',

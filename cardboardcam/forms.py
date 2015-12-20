@@ -11,33 +11,33 @@ from cardboardcam.models import User
 
 class JoinAdvancedXmpFields(Form):
     CroppedAreaLeftPixels = IntegerField(label=u'GPano:CroppedAreaLeftPixels',
-                                            default=0,
-                                            validators=[validators.required(),
-                                                        validators.NumberRange(min=0)])
+                                         default='',
+                                         validators=[validators.required(),
+                                                     validators.NumberRange(min=0)])
     CroppedAreaTopPixels = IntegerField(label=u'GPano:CroppedAreaTopPixels',
-                                           default=0,
-                                           validators=[validators.required(),
-                                                       validators.NumberRange(min=0)])
+                                        default='',
+                                        validators=[validators.required(),
+                                                    validators.NumberRange(min=0)])
     CroppedAreaImageWidthPixels = IntegerField(label=u'GPano:CroppedAreaImageWidthPixels',
-                                                   default=0,
-                                                   validators=[validators.required(),
-                                                               validators.NumberRange(min=0)])
+                                               default='',
+                                               validators=[validators.required(),
+                                                           validators.NumberRange(min=0)])
     CroppedAreaImageHeightPixels = IntegerField(label=u'GPano:CroppedAreaImageHeightPixels',
-                                                    default=0,
-                                                    validators=[validators.required(),
-                                                                validators.NumberRange(min=0)])
-    FullPanoWidthPixels = IntegerField(label=u'GPano:FullPanoWidthPixels',
-                                          default=0,
-                                          validators=[validators.required(),
-                                                      validators.NumberRange(min=0)])
-    FullPanoHeightPixels = IntegerField(label=u'GPano:FullPanoHeightPixels',
-                                           default=0,
-                                           validators=[validators.required(),
-                                                       validators.NumberRange(min=0)])
-    InitialViewHeadingDegrees = IntegerField(label=u'GPano:InitialViewHeadingDegrees',
-                                                default=180,
+                                                default='',
                                                 validators=[validators.required(),
                                                             validators.NumberRange(min=0)])
+    FullPanoWidthPixels = IntegerField(label=u'GPano:FullPanoWidthPixels',
+                                       default='',
+                                       validators=[validators.required(),
+                                                   validators.NumberRange(min=0)])
+    FullPanoHeightPixels = IntegerField(label=u'GPano:FullPanoHeightPixels',
+                                        default='',
+                                        validators=[validators.required(),
+                                                    validators.NumberRange(min=0)])
+    InitialViewHeadingDegrees = IntegerField(label=u'GPano:InitialViewHeadingDegrees',
+                                             default=180,
+                                             validators=[validators.required(),
+                                                         validators.NumberRange(min=0)])
 
 
 class ImageForm(SecureForm):
