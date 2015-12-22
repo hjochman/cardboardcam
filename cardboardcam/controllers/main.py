@@ -125,18 +125,21 @@ def about():
     return render_template('about.html')
 
 
-def check_jpeg(img_path, require_xmp=False):
+def check_jpeg(img_path: str, require_xmp=False) -> (int, str):
 
     message = None
+    status_code = None
 
     # don't accept huge files
     filesize = os.stat(img_path).st_size
     if filesize > current_app.config.get('MAX_CONTENT_LENGTH', 20 * 1024 * 1024):
         message = "Image too large."
+        status_code = 413  # Request Entity Too Large
 
     # only accept JPEGs
     if b'image/jpeg' not in magic.from_file(img_path, mime=True):
         message = "No JPEG data found. Is this really a Cardboard Camera VR image ?"
+        status_code = 422  # Unprocessable Entity
 
     if require_xmp:
         try:
@@ -144,8 +147,9 @@ def check_jpeg(img_path, require_xmp=False):
             xmpfile.get_xmp()
         except XMPError:
             message = "JPEG does not contain valid XMP data."
+            status_code = 422  # Unprocessable Entity
 
-    return message
+    return (status_code, message)
 
 
 @main.route('/split/upload', methods=['POST'])
@@ -159,11 +163,10 @@ def upload_for_split():
     tmp_img_path = path.join(upload_dir(), tmp_filename)
     file.save(tmp_img_path)
 
-    jpeg_error_message = check_jpeg(tmp_img_path, require_xmp=True)
+    status_code, jpeg_error_message = check_jpeg(tmp_img_path, require_xmp=True)
 
-    if jpeg_error_message is not None:
-        # (400 Bad Request), malformed data from client
-        return error_page(400, message=jpeg_error_message)
+    if status_code is not None:
+        return error_page(status_code, message=jpeg_error_message)
 
     hash_id = get_hash_id(tmp_img_path)
     filename = hash_id + '.jpg'
@@ -237,17 +240,16 @@ def upload_for_join():
             audio = fp
     
     if left is None or right is None:
-        error_page(400, 'Two JPEG images with "left" and "right" in '
+        error_page(422, 'Two JPEG images with "left" and "right" in '
                         'the names are required')
 
     for i in [left, right]:
-        jpeg_error_message = check_jpeg(i, require_xmp=False)
-        if jpeg_error_message is not None:
-            # (400 Bad Request), malformed data from client
-            return error_page(400, message=jpeg_error_message)
+        status_code, jpeg_error_message = check_jpeg(i, require_xmp=False)
+        if status_code is not None:
+            return error_page(status_code, message=jpeg_error_message)
 
     if get_image_dimensions(left) != get_image_dimensions(right):
-        error_page(400, 'Images must be the same dimensions')
+        error_page(422, 'Images must be the same dimensions')
 
     vr_filepath = join_vr_image(left, right, audio, **gpano_xmp_properties)
     hash_id = path.basename(vr_filepath.split('.')[0])
