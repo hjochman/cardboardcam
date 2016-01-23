@@ -97,11 +97,11 @@ def create_gpano_xmp_form_fields(width, height):
                                              validators.NumberRange(min=0)])
 
     fields[u'GPano:CroppedAreaLeftPixels'].default = 0
-    fields[u'GPano:CroppedAreaTopPixels'].default = height - 165
+    fields[u'GPano:CroppedAreaTopPixels'].default = height
     fields[u'GPano:CroppedAreaImageWidthPixels'].default = width
     fields[u'GPano:CroppedAreaImageHeightPixels'].default = height
     fields[u'GPano:FullPanoWidthPixels'].default = width
-    fields[u'GPano:FullPanoHeightPixels'].default = height * 2.6
+    fields[u'GPano:FullPanoHeightPixels'].default = int(width/2.0)
     fields[u'GPano:InitialViewHeadingDegrees'].default = 180
 
     return fields
@@ -359,7 +359,7 @@ def join_vr_image(left_img_filename, right_img_filename, audio_filename=None, ou
     if CroppedAreaLeftPixels is None:
         CroppedAreaLeftPixels = 0
     if CroppedAreaTopPixels is None:
-        CroppedAreaTopPixels = height - 165
+        CroppedAreaTopPixels = height
     if CroppedAreaImageWidthPixels is None:
         CroppedAreaImageWidthPixels = width
     if CroppedAreaImageHeightPixels is None:
@@ -367,18 +367,24 @@ def join_vr_image(left_img_filename, right_img_filename, audio_filename=None, ou
     if FullPanoWidthPixels is None:
         FullPanoWidthPixels = width
     if FullPanoHeightPixels is None:
-        FullPanoHeightPixels = height
+        FullPanoHeightPixels = int(width/2.0)
     if InitialViewHeadingDegrees is None:
         InitialViewHeadingDegrees = 180
 
     # TODO: if left or right jpg has existing EXIF data, take it (minus the XMP part)
     #       if there is no EXIF data, add some minimal EXIF data
     #       (eg ImageWidth, ImageLength, Orientation, DateTime)
+    #
+    #       Currently the left image from a split contains more EXIF metadata
+    #       (eg Thumbnail fields) since it is derived from the original.
+    #       For whatever reason, the GPS location date gets discarded when
+    #       we remove the right image + audio from the extended XMP data using
+    #       Exempi.
 
-    # TODO: consider adding this namespace - it seems to be in originals but
-    #       doesn't seem to matter in practise
-    # xmlns:xmp = "http://ns.adobe.com/xap/1.0/" (
-    # xmp:ModifyDate (iso8660 formatted date string)
+    # Exempi seems to add a xmp:ModifyDate (iso8660 formatted date string)
+    # attribute under this namespace xmlns:xmp = "http://ns.adobe.com/xap/1.0/"
+    # This isn't found in the Cardboard Camera originals - not sure if it's
+    # a problem having it there or not (doesn't seem to matter)
 
     # TODO: catch XMPError ("bad schema") here
     xmpfile = XMPFiles(file_path=tmp_vr_filename, open_forupdate=True)
