@@ -171,6 +171,7 @@ Dropzone.options.splitUploadDropzone = {
     dictResponseError: 'Server not Configured',
     acceptedFiles: ".jpg,.jpeg",
     previewsContainer: '.dropzone-previews-split',
+    clickable: '.dropzone',
     init:function(){
       var self = this;
       // config
@@ -205,6 +206,7 @@ Dropzone.options.joinUploadDropzone = {
     dictResponseError: 'Server not Configured',
     acceptedFiles: ".jpg,.jpeg,.mp4,.m4a",
     previewsContainer: '.dropzone-previews-join',
+    clickable: '.dropzone',
     init:function(){
       var self = this;
       // config
