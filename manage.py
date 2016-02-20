@@ -1,9 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 
 from flask.ext.script import Manager, Server
 from flask.ext.script.commands import ShowUrls, Clean
+from flask.ext.assets import ManageAssets
+from cardboardcam import assets_env
 from cardboardcam import create_app
 from cardboardcam.models import db, User
 
@@ -13,6 +15,7 @@ env = os.environ.get('APPNAME_ENV', 'dev')
 app = create_app('cardboardcam.settings.%sConfig' % env.capitalize(), env=env)
 
 manager = Manager(app)
+manager.add_command("assets", ManageAssets(assets_env))
 manager.add_command("server", Server())
 manager.add_command("show-urls", ShowUrls())
 manager.add_command("clean", Clean())
