@@ -13,12 +13,18 @@ git clone https://bitbucket.org/pansapiens/cardboardcam.git
 cd cardboardcam
 ```
 
-Create a virtualenv and install dependencies:
+Create a [virtualenv](https://virtualenv.readthedocs.org/en/latest/) and install dependencies:
 
 ```
-sudo apt-get install libexempi3  # (Ubuntu/Debian)
-brew install exempi              # (Homebrew on OS X)
-mkvirtualenv ~/.virtualenvs/cardboardcam
+# (Ubuntu/Debian)
+sudo apt-get install libexempi3
+sudo apt-get install python-virtualenv python3-pip
+
+# (Homebrew on OS X)
+brew install exempi pyenv-virtualenv
+
+mkvirtualenv -p $(which python3) ~/.virtualenvs/cardboardcam
+source ~/.virtualenvs/cardboardcam/bin/activate
 pip install -U -r requirements.txt
 ```
 
