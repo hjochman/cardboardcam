@@ -2,7 +2,10 @@
 
 A webapp for splitting/joining photos from Cardboard Camera to/from a stereo pair and audio file.
 
+Available here: http://cctoolkit.vectorcult.com/
+
 ## Installation and setup
+
 The server will run on Linux, OS X and probably other Unix-like systems.
 
 ```
