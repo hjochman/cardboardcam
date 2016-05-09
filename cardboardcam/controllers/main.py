@@ -130,6 +130,9 @@ def check_jpeg(img_path: str, require_xmp=False) -> (int, str):
     message = None
     status_code = None
 
+    if not img_path:
+        return (422, "No image path ?")
+
     # don't accept huge files
     filesize = os.stat(img_path).st_size
     if filesize > current_app.config.get('MAX_CONTENT_LENGTH', 20 * 1024 * 1024):
