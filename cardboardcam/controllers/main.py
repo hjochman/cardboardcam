@@ -180,6 +180,8 @@ def upload_for_split():
     try:
         l, r, a, vr_image_metadata = split_vr_image(img_path)
     except Exception as e:
+        import traceback
+        current_app.logger.error(traceback.format_exc())
         abort(500)
 
     # return jsonify({'redirect': url_for('main.result', img_filename=filename)})
@@ -467,6 +469,21 @@ def join_vr_image(left_img_filename, right_img_filename, audio_filename=None, ou
     return vr_filepath
 
 
+def decode_base64(data):
+    """Decode base64, padding being optional.
+       http://stackoverflow.com/a/9807138
+
+    :param data: Base64 data as a string
+    :returns: The decoded byte string.
+
+    """
+    data = str(data)
+    missing_padding = 4 - len(data) % 4
+    if missing_padding:
+        data += '=' * missing_padding
+    return base64.b64decode(data)
+
+
 def split_vr_image(img_filename):
 
     # TODO: catch XMPError ("bad schema") here
@@ -497,7 +514,7 @@ def split_vr_image(img_filename):
         # save the right image
         right_img_filename = get_image_name(img_filename, 'right')
         with open(right_img_filename, 'wb') as fh:
-            fh.write(base64.b64decode(right_image_b64))
+            fh.write(decode_base64(right_image_b64))
         del right_image_b64
         # gc.collect()
 
@@ -514,7 +531,7 @@ def split_vr_image(img_filename):
         # save the audio
         audio_filename = get_audio_file_name(img_filename)
         with open(audio_filename, 'wb') as fh:
-            fh.write(base64.b64decode(audio_b64))
+            fh.write(decode_base64(audio_b64))
         del audio_b64
         # gc.collect()
 
