@@ -140,7 +140,7 @@ def check_jpeg(img_path: str, require_xmp=False) -> (int, str):
         status_code = 413  # Request Entity Too Large
 
     # only accept JPEGs
-    if b'image/jpeg' not in magic.from_file(img_path, mime=True):
+    if 'image/jpeg' not in magic.from_file(img_path, mime=True):
         message = "No JPEG data found. Is this really a Cardboard Camera VR image ?"
         status_code = 422  # Unprocessable Entity
 
@@ -228,7 +228,7 @@ def upload_for_join():
     audio = None
     for fp in filepaths:
         mimetype = magic.from_file(fp, mime=True)
-        if b'image/jpeg' in mimetype:
+        if 'image/jpeg' in mimetype:
             fn = path.basename(fp).lower()
             if 'left' in fn or right is not None:
                 left = fp
@@ -239,9 +239,9 @@ def upload_for_join():
         # NOTE: mimetype only every seems to be video/mp4, however I've included a few
         # other likely candidates to be inclusive. if broken audio is being reported,
         # maybe remove those others
-        if mimetype in [b'video/mp4',
-                        b'audio/mp4a-latm',
-                        b'audio/mp4']:
+        if mimetype in ['video/mp4',
+                        'audio/mp4a-latm',
+                        'audio/mp4']:
             audio = fp
     
     if left is None or right is None:
