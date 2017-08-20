@@ -1,29 +1,29 @@
+import base64
 import os
 import shutil
 import tempfile
+from collections import OrderedDict
 from datetime import datetime
 from os import path
-import base64
-from collections import OrderedDict
+
+from attrdict import AttrDict
 
 import magic
-from PIL import Image  # from Pillow package
 import xxhash
+from PIL import Image  # from Pillow package
 from basehash import base62
-from libxmp import XMPFiles, XMPMeta, XMPError
-from libxmp.consts import XMP_NS_TIFF
-
 from flask import Blueprint, render_template, flash, request, redirect, url_for, abort, jsonify
 from flask import current_app
 from flask.ext.login import login_user, logout_user, login_required
 from werkzeug import secure_filename
-
 from wtforms import IntegerField
 from wtforms import validators
 
 from cardboardcam.extensions import cache
 from cardboardcam.forms import LoginForm, JoinAdvancedXmpFields
 from cardboardcam.models import User
+from libxmp import XMPFiles, XMPMeta, XMPError
+from libxmp.consts import XMP_NS_TIFF
 
 XMP_NS_GPHOTOS_IMAGE = u'http://ns.google.com/photos/1.0/image/'
 XMP_NS_GPHOTOS_AUDIO = u'http://ns.google.com/photos/1.0/audio/'
@@ -75,6 +75,7 @@ XMPMeta.get_properties = _get_xmp_properties
 
 main = Blueprint('main', __name__)
 
+
 # upload_folder = 'uploads'
 #
 # @main.record
@@ -92,16 +93,16 @@ def create_gpano_xmp_form_fields(width, height):
     for p in GPANO_PROPERTIES:
         label = u'GPano:%s' % p
         fields[label] = IntegerField(label=label,
-                                 default=0,
-                                 validators=[validators.required(),
-                                             validators.NumberRange(min=0)])
+                                     default=0,
+                                     validators=[validators.required(),
+                                                 validators.NumberRange(min=0)])
 
     fields[u'GPano:CroppedAreaLeftPixels'].default = 0
     fields[u'GPano:CroppedAreaTopPixels'].default = height
     fields[u'GPano:CroppedAreaImageWidthPixels'].default = width
     fields[u'GPano:CroppedAreaImageHeightPixels'].default = height
     fields[u'GPano:FullPanoWidthPixels'].default = width
-    fields[u'GPano:FullPanoHeightPixels'].default = int(width/2.0)
+    fields[u'GPano:FullPanoHeightPixels'].default = int(width / 2.0)
     fields[u'GPano:InitialViewHeadingDegrees'].default = 180
 
     return fields
@@ -126,7 +127,6 @@ def about():
 
 
 def check_jpeg(img_path: str, require_xmp=False) -> (int, str):
-
     message = None
     status_code = None
 
@@ -192,7 +192,7 @@ def upload_for_split():
 @main.route('/join/upload', methods=['POST'])
 def upload_for_join():
     gpano_xmp_advanced_fields = JoinAdvancedXmpFields(csrf_enabled=False)
-    
+
     # if not gpano_xmp_advanced_fields.validate():
     #     return error_page(400, message="Invalid GPano XMP properties.")
 
@@ -243,7 +243,7 @@ def upload_for_join():
                         'audio/mp4a-latm',
                         'audio/mp4']:
             audio = fp
-    
+
     if left is None or right is None:
         error_page(422, 'Two JPEG images with "left" and "right" in '
                         'the names are required')
@@ -284,33 +284,45 @@ def result_join(img_id=None):
                            thumb_height=thumb_height)
 
 
-@main.route('/<img_id>', methods=['GET'])
-def result(img_id=None, img_metadata=None):
+def get_image_paths(img_id):
     img_filename = '%s.jpg' % img_id
     upload_folder = upload_dir()
     left_img = get_image_name(img_filename, 'left')
     right_img = get_image_name(img_filename, 'right')
     left_img_filepath = path.join(upload_folder, left_img)
     right_img_filepath = path.join(upload_folder, right_img)
-    audio_file = path.join(upload_folder, get_audio_file_name(img_filename))
-    if path.isfile(left_img_filepath) and path.isfile(right_img_filepath):
+    audio_filepath = path.join(upload_folder, get_audio_file_name(img_filename))
+    audio_file_url = url_for('static', filename='uploads/' + get_audio_file_name(img_filename))
+
+    context = AttrDict()
+    context.update(audio_file=audio_file_url,
+                   audio_filepath=audio_filepath,
+                   left_img_filepath=left_img_filepath,
+                   right_img_filepath=right_img_filepath,
+                   left_img=left_img,
+                   right_img=right_img)
+
+    return context
+
+
+@main.route('/<img_id>', methods=['GET'])
+def result(img_id=None, img_metadata=None):
+    c = get_image_paths(img_id)
+
+    if path.isfile(c.left_img_filepath) and path.isfile(c.right_img_filepath):
         pass
     else:
         abort(404)
 
-    thumb_height = calculate_thumbnail_height(left_img_filepath)
+    thumb_height = calculate_thumbnail_height(c.left_img_filepath)
 
-    audio_file_url = None
-    if path.isfile(audio_file):
-        audio_file_url = url_for('static', filename='uploads/' + get_audio_file_name(img_filename))
+    if not path.isfile(c.audio_filepath):
+        c.audio_file = None
 
     template = 'result_split_fragment.html'
-    return render_template(template,
-                           audio_file=audio_file_url,
-                           left_img=left_img,
-                           right_img=right_img,
-                           thumb_height=thumb_height,
-                           img_metadata=img_metadata)
+    c.update(thumb_height=thumb_height,
+             img_metadata=img_metadata)
+    return render_template(template, **c)
 
 
 def get_image_name(img_filename: str, eye: str) -> str:
@@ -355,7 +367,6 @@ def join_vr_image(left_img_filename, right_img_filename, audio_filename=None, ou
                   FullPanoWidthPixels=None,
                   FullPanoHeightPixels=None,
                   InitialViewHeadingDegrees=None):
-
     tmp_vr_filename = next(tempfile._get_candidate_names())  # tempfile.NamedTemporaryFile().name
     shutil.copy(left_img_filename, tmp_vr_filename)
 
@@ -372,7 +383,7 @@ def join_vr_image(left_img_filename, right_img_filename, audio_filename=None, ou
     if FullPanoWidthPixels is None:
         FullPanoWidthPixels = width
     if FullPanoHeightPixels is None:
-        FullPanoHeightPixels = int(width/2.0)
+        FullPanoHeightPixels = int(width / 2.0)
     if InitialViewHeadingDegrees is None:
         InitialViewHeadingDegrees = 180
 
@@ -425,7 +436,6 @@ def join_vr_image(left_img_filename, right_img_filename, audio_filename=None, ou
                        Orientation=0,
                        Make='vectorcult.com',
                        Model='')
-
 
     left_img_b64 = None
     with open(left_img_filename, 'rb') as fh:
@@ -485,7 +495,6 @@ def decode_base64(data):
 
 
 def split_vr_image(img_filename):
-
     # TODO: catch XMPError ("bad schema") here
     xmpfile = XMPFiles(file_path=img_filename, open_forupdate=True)
     xmp = xmpfile.get_xmp()

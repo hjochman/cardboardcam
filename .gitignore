@@ -9,3 +9,6 @@ database.db
 */settings.py
 */static/public/js/common.js
 */static/public/css/common.css
+log/
+
+cardboardcam/static/bower_components/
