@@ -8,11 +8,15 @@ class Config(object):
     GOOGLE_ANALYTICS_TRACKING_ID = 'UA-882020-14'
     UPLOAD_FOLDER = 'cardboardcam/static/uploads'
     LOG_DIR = 'log/'
-    MEDIA_FOLDER = UPLOAD_FOLDER
+    MEDIA_FOLDER = 'static/uploads'
     MEDIA_THUMBNAIL_FOLDER = MEDIA_FOLDER + '/thumbnails'
     MEDIA_URL = '/static/'
     MEDIA_THUMBNAIL_URL = '/static/uploads/thumbnails/'
+    THUMBNAIL_MEDIA_ROOT = MEDIA_FOLDER
+    THUMBNAIL_MEDIA_THUMBNAIL_ROOT = MEDIA_THUMBNAIL_FOLDER
+    THUMBNAIL_MEDIA_THUMBNAIL_URL = MEDIA_THUMBNAIL_URL
     MAX_CONTENT_LENGTH = 20 * 1024 * 1024  # 20 Mb
+   
 
 
 class ProdConfig(Config):

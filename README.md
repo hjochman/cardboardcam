@@ -11,6 +11,7 @@ The server will run on Linux, OS X and probably other Unix-like systems.
 ```
 git clone https://bitbucket.org/pansapiens/cardboardcam.git
 cd cardboardcam
+mkdir -p cardboardcam/static/uploads/thumbnails
 ```
 
 Create a [virtualenv](https://virtualenv.readthedocs.org/en/latest/) and install dependencies:
