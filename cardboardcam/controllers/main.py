@@ -92,9 +92,9 @@ def create_gpano_xmp_form_fields(width, height):
     for p in GPANO_PROPERTIES:
         label = u'GPano:%s' % p
         fields[label] = IntegerField(label=label,
-                                 default=0,
-                                 validators=[validators.required(),
-                                             validators.NumberRange(min=0)])
+                                     default=0,
+                                     validators=[validators.required(),
+                                                 validators.NumberRange(min=0)])
 
     fields[u'GPano:CroppedAreaLeftPixels'].default = 0
     fields[u'GPano:CroppedAreaTopPixels'].default = height
@@ -135,7 +135,7 @@ def check_jpeg(img_path: str, require_xmp=False) -> (int, str):
 
     # don't accept huge files
     filesize = os.stat(img_path).st_size
-    if filesize > current_app.config.get('MAX_CONTENT_LENGTH', 20 * 1024 * 1024):
+    if filesize > current_app.config.get('MAX_CONTENT_LENGTH', 100 * 1024 * 1024):
         message = "Image too large."
         status_code = 413  # Request Entity Too Large
 
