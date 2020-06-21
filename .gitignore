@@ -9,3 +9,5 @@ database.db
 */settings.py
 */static/public/js/common.js
 */static/public/css/common.css
+
+logs/

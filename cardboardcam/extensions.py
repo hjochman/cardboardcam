@@ -1,9 +1,11 @@
-from flask.ext.cache import Cache
-from flask.ext.debugtoolbar import DebugToolbarExtension
-from flask.ext.login import LoginManager
+# from flask_cache import Cache
+from flask_caching import Cache
+
+from flask_login import LoginManager
 from flask_assets import Environment
+
 # from flask_wtf.csrf import CsrfProtect
-from flask.ext.thumbnails import Thumbnail
+from flask_thumbnails import Thumbnail
 
 from cardboardcam.models import User
 
@@ -13,8 +15,6 @@ cache = Cache()
 # init flask assets
 assets_env = Environment()
 
-debug_toolbar = DebugToolbarExtension()
-
 login_manager = LoginManager()
 login_manager.login_view = "main.login"
 login_manager.login_message_category = "warning"
@@ -22,6 +22,7 @@ login_manager.login_message_category = "warning"
 # csrf = CsrfProtect()
 
 thumbnail = Thumbnail()
+
 
 @login_manager.user_loader
 def load_user(userid):

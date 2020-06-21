@@ -1,0 +1,31 @@
+version: "3.6"
+
+services:
+  cardboardcam:
+    image: cardboardcam:latest
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    restart: always
+    command:
+      "/usr/local/bin/uwsgi
+      --http-socket :8000
+      --wsgi-file /app/wsgi.py
+      --callable app
+      --max-requests 1000
+      --master
+      --processes 1
+      --chmod"
+      # --logto /app/logs/cardboardcam_uwsgi.log"
+    environment:
+      - ENV=prod
+      # - ENV: dev
+    env_file:
+      - .env
+    ports:
+      - 8000:8000
+    volumes:
+      - ./logs:/app/logs
+      - ./cardboardcam/static/uploads:/app/cardboardcam/static/uploads
+#volumes:
+#  db:

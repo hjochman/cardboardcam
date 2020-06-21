@@ -1,5 +1,5 @@
-from flask.ext.sqlalchemy import SQLAlchemy
-from flask.ext.login import UserMixin, AnonymousUserMixin
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin, AnonymousUserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
@@ -39,4 +39,4 @@ class User(db.Model, UserMixin):
         return self.id
 
     def __repr__(self):
-        return '<User %r>' % self.username
+        return "<User %r>" % self.username

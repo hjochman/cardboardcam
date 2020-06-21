@@ -1,9 +1,9 @@
 #! ../env/bin/python
 # -*- coding: utf-8 -*-
 
-__author__ = 'Andrew Perry'
-__email__ = 'ajperry@pansapiens.com'
-__version__ = '1'
+__author__ = "Andrew Perry"
+__email__ = "ajperry@pansapiens.com"
+__version__ = "1"
 
 import os
 import logging
@@ -20,7 +20,6 @@ from cardboardcam.models import db
 from cardboardcam.extensions import (
     cache,
     assets_env,
-    debug_toolbar,
     login_manager,
     # csrf,
     thumbnail,
@@ -42,24 +41,19 @@ def create_app(object_name, env="prod"):
     app = Flask(__name__)
 
     app.config.from_object(object_name)
-    app.config['ENV'] = env
+    app.config["ENV"] = env
 
-    log_dir = app.config.get('LOG_DIR', '')
+    log_dir = app.config.get("LOG_DIR", "")
     if not os.path.exists(log_dir):
         os.mkdir(log_dir)
-    log_path = os.path.join(log_dir, 'cardboardcam.log')
-    handler = RotatingFileHandler(log_path,
-                                  maxBytes=10000,
-                                  backupCount=1)
+    log_path = os.path.join(log_dir, "cardboardcam.log")
+    handler = RotatingFileHandler(log_path, maxBytes=10000, backupCount=1)
     # handler = StreamHandler()
     handler.setLevel(logging.DEBUG)
     app.logger.addHandler(handler)
 
     # initialize the cache
     cache.init_app(app)
-
-    # initialize the debug tool bar
-    debug_toolbar.init_app(app)
 
     # initialize SQLAlchemy
     db.init_app(app)
@@ -77,8 +71,8 @@ def create_app(object_name, env="prod"):
     thumbnail.init_app(app)
 
     # check that our upload folder exists
-    if not os.path.exists(app.config['UPLOAD_FOLDER']):
-        os.mkdir(app.config['UPLOAD_FOLDER'])
+    if not os.path.exists(app.config["UPLOAD_FOLDER"]):
+        os.mkdir(app.config["UPLOAD_FOLDER"])
 
     # register our blueprints
     app.register_blueprint(main)

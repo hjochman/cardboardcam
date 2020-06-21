@@ -1,17 +1,28 @@
 import tempfile
+import os
+
 db_file = tempfile.NamedTemporaryFile()
 
 
 class Config(object):
-    SECRET_KEY = ('o93ryvba8rnyaljrdqp0plaoseryfusihgfjkshfla238uierndq2h3kr'
-                  'ha2klmfeps3m4hkgnkjwdh')
-    GOOGLE_ANALYTICS_TRACKING_ID = 'UA-882020-14'
-    UPLOAD_FOLDER = 'cardboardcam/static/uploads'
-    LOG_DIR = 'log/'
-    MEDIA_FOLDER = 'static/uploads'
-    MEDIA_THUMBNAIL_FOLDER = MEDIA_FOLDER + '/thumbnails'
-    MEDIA_URL = '/static/'
-    MEDIA_THUMBNAIL_URL = '/static/uploads/thumbnails/'
+    SECRET_KEY = os.environ.get(
+        "SECRET_KEY",
+        "o93ryvba8rnyaljrdqp0plaoseryfusihgfjkshfla238uierndq2h3kr"
+        + "ha2klmfeps3m4hkgnkjwdh",
+    )
+    GOOGLE_ANALYTICS_TRACKING_ID = os.environ.get(
+        "GOOGLE_ANALYTICS_TRACKING_ID", "UA-882020-14"
+    )
+
+    APP_BASE = os.environ.get("APP_BASE", "/app")
+    LOG_DIR = "logs/"
+    UPLOAD_FOLDER = os.environ.get(
+        "UPLOAD_FOLDER", os.path.join(APP_BASE, "cardboardcam/static/uploads")
+    )
+    MEDIA_FOLDER = UPLOAD_FOLDER
+    MEDIA_THUMBNAIL_FOLDER = os.path.join(MEDIA_FOLDER, "thumbnails")
+    MEDIA_URL = "/static/"
+    MEDIA_THUMBNAIL_URL = "/static/uploads/thumbnails/"
     THUMBNAIL_MEDIA_ROOT = MEDIA_FOLDER
     THUMBNAIL_MEDIA_THUMBNAIL_ROOT = MEDIA_THUMBNAIL_FOLDER
     THUMBNAIL_MEDIA_THUMBNAIL_URL = MEDIA_THUMBNAIL_URL
@@ -19,23 +30,17 @@ class Config(object):
 
 
 class ProdConfig(Config):
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///../database.db'
-
-    CACHE_TYPE = 'simple'
-    APP_BASE = '/srv/webapps/cardboardcam/src/'
-    UPLOAD_FOLDER = APP_BASE + 'cardboardcam/static/uploads'
-
-    MEDIA_FOLDER = UPLOAD_FOLDER
-    MEDIA_THUMBNAIL_FOLDER = MEDIA_FOLDER + '/thumbnails'
+    SQLALCHEMY_DATABASE_URI = "sqlite:///../database.db"
+    CACHE_TYPE = "simple"
 
 
 class DevConfig(Config):
     DEBUG = True
     DEBUG_TB_INTERCEPT_REDIRECTS = False
 
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///../database.db'
+    SQLALCHEMY_DATABASE_URI = "sqlite:///../database.db"
 
-    CACHE_TYPE = 'null'
+    CACHE_TYPE = "null"
     ASSETS_DEBUG = True
 
 
@@ -43,8 +48,8 @@ class TestConfig(Config):
     DEBUG = True
     DEBUG_TB_INTERCEPT_REDIRECTS = False
 
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + db_file.name
+    SQLALCHEMY_DATABASE_URI = "sqlite:///" + db_file.name
     SQLALCHEMY_ECHO = True
 
-    CACHE_TYPE = 'null'
+    CACHE_TYPE = "null"
     WTF_CSRF_ENABLED = False
