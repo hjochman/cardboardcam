@@ -2,7 +2,7 @@ version: "3.6"
 
 services:
   cardboardcam:
-    image: cardboardcam:latest
+    image: pansapiens/cardboardcam:latest
     build:
       context: .
       dockerfile: ./Dockerfile

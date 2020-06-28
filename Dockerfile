@@ -3,12 +3,12 @@ FROM python:3.7-buster
 ARG USE_UID=1000
 ARG USE_GID=1000
 
-ADD ./requirements.txt /tmp/requirements.txt
-
 RUN apt-get update -y && \
     apt-get install -y libexempi8 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+ADD ./requirements.txt /tmp/requirements.txt
 
 RUN pip install -r /tmp/requirements.txt && \
     pip install uwsgi==2.0.19.1 && \
@@ -23,10 +23,10 @@ WORKDIR /app
 
 # CMD "ENV=prod python3 wsgi.py"
 CMD ["/usr/local/bin/uwsgi", \
-     "--http-socket", ":8000", \
-     "--logto", "/app/logs/cardboardcam_uwsgi.log", \
-     "--wsgi-file", "/app/wsgi.py", \
-     "--callable", "app", "--max-requests", "1000", \
-     "--master", "--processes", "1", "--chmod"]
+    "--http-socket", ":8000", \
+    "--logto", "/app/logs/cardboardcam_uwsgi.log", \
+    "--wsgi-file", "/app/wsgi.py", \
+    "--callable", "app", "--max-requests", "1000", \
+    "--master", "--processes", "1", "--chmod"]
 
 #     "--uid", "${USE_UID}", "--gid", "${USE_GID}", \
